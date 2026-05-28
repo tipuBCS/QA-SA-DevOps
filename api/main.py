@@ -4,13 +4,11 @@ from aws_lambda_powertools.event_handler.api_gateway import Response
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from aws_lambda_powertools.metrics import MetricUnit
 
-
 # Initialize core utilities
 logger = Logger()
 tracer = Tracer()
 metrics = Metrics()
 app = APIGatewayRestResolver()
-
 
 # Create an endpoint
 @app.get("/users/<user_id>")

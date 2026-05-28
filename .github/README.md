@@ -9,10 +9,17 @@ Create an [identity provider for Github](https://docs.github.com/en/actions/how-
 ### 2. Create a role for Github to use in your AWS Account
 Use this [guide](https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-deployments/oidc-in-aws#configuring-the-role-and-trust-policy)
 
-### 3. Create a secret in Github for AWS Account and Role
+### 3. Create your secrets in Github for AWS Account and Role
 Go to your repo on GitHub
 Settings → Secrets and variables → Actions
 Click "New repository secret"
 Add these:
 Name: AWS_ROLE_ARN → Value: your-role-arn
+Name: AWS_ACCOUNT_ID → Value: aws-account-id
+
+#### 4. Create non-sensitive variables in Github for AWS Region and STAGE
+Go to your repo on GitHub
+Settings → Secrets and variables → Actions -> Variables
+Click "New repository variable"
 Name: AWS_REGION → Value: region
+Name: Stage → Value: prod

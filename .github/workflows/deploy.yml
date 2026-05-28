@@ -32,8 +32,13 @@ jobs:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ${{ vars.AWS_REGION }}
       - run: npm ci
         working-directory: infra
       - run: npx cdk deploy --all --require-approval never
         working-directory: infra
+        env:
+          STAGE: ${{ vars.STAGE }}
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+

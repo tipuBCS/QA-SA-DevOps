@@ -1,6 +1,7 @@
-import { Stack, StackProps, Duration, CfnOutput } from 'aws-cdk-lib/core';
-import { Function, Runtime, Code } from 'aws-cdk-lib/aws-lambda';
+import { Stack, StackProps, Duration, CfnOutput, RemovalPolicy } from 'aws-cdk-lib/core';
+import { Function, Runtime, Code, LayerVersion } from 'aws-cdk-lib/aws-lambda';
 import { RestApi, Cors, LambdaIntegration } from 'aws-cdk-lib/aws-apigateway';
+import { Table, BillingMode, AttributeType, ProjectionType } from 'aws-cdk-lib/aws-dynamodb';
 import { join } from 'path';
 import { Construct } from 'constructs';
 import { getStage } from '../helpers';
@@ -11,19 +12,49 @@ export class ApiStack extends Stack {
 
     const stage = getStage();
 
+    // DynamoDB table (single-table design)
+    const table = new Table(this, `RoomBookerTable-${stage}`, {
+      tableName: `room-booker-${stage}`,
+      partitionKey: { name: 'PK', type: AttributeType.STRING },
+      sortKey: { name: 'SK', type: AttributeType.STRING },
+      billingMode: BillingMode.PAY_PER_REQUEST,
+      removalPolicy: stage === 'dev' ? RemovalPolicy.DESTROY : RemovalPolicy.RETAIN,
+    });
+
+    // GSI for email lookups (and other access patterns later)
+    table.addGlobalSecondaryIndex({
+      indexName: 'GSI1',
+      partitionKey: { name: 'GSI1PK', type: AttributeType.STRING },
+      sortKey: { name: 'GSI1SK', type: AttributeType.STRING },
+      projectionType: ProjectionType.ALL,
+    });
+
+    // AWS Lambda Powertools layer
+    const powertoolsLayer = LayerVersion.fromLayerVersionArn(
+      this, `PowertoolsLayer-${stage}`,
+      `arn:aws:lambda:${this.region}:017000801446:layer:AWSLambdaPowertoolsPythonV3-python312-x86_64:7`
+    );
+
     // Lambda function with the API code
     const apiFunction = new Function(this, `ApiFunction-${stage}`, {
       functionName: `room-booker-api-${stage}`,
       runtime: Runtime.PYTHON_3_12,
       handler: 'main.lambda_handler',
-      code: Code.fromAsset(join(__dirname, '../../../api')),
+      code: Code.fromAsset(join(__dirname, '../../../api'), {
+        exclude: ['.venv', 'tests', '__pycache__', '.pytest_cache', '.env', 'uv.lock'],
+      }),
+      layers: [powertoolsLayer],
       timeout: Duration.seconds(30),
       memorySize: 256,
       environment: {
         POWERTOOLS_SERVICE_NAME: `room-booker-api-${stage}`,
         LOG_LEVEL: 'INFO',
+        DB_TABLE_NAME: table.tableName,
       },
     });
+
+    // Grant the Lambda read/write access to the table
+    table.grantReadWriteData(apiFunction);
 
     // API Gateway with Lambda proxy integration
     const api = new RestApi(this, `Api-${stage}`, {
@@ -44,10 +75,15 @@ export class ApiStack extends Stack {
       anyMethod: true,
     });
 
-    // Output the API URL
+    // Outputs
     new CfnOutput(this, 'ApiUrl', {
       value: api.url,
       description: 'API Gateway URL',
+    });
+
+    new CfnOutput(this, 'TableName', {
+      value: table.tableName,
+      description: 'DynamoDB Table Name',
     });
   }
 }

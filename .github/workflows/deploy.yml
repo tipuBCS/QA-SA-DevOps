@@ -46,3 +46,19 @@ jobs:
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
           AWS_REGION: ${{ vars.AWS_REGION }}
 
+  integration-test:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install uv
+      - run: uv sync --extra dev
+        working-directory: api
+      - run: uv run pytest -m integration -v
+        working-directory: api
+        env:
+          API_URL: ${{ vars.API_URL }}
+

@@ -1,9 +1,24 @@
 [project]
 name = "api"
 version = "0.1.0"
-description = "Add your description here"
+description = "Room Booker API"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
     "aws-lambda-powertools>=3.23.0",
+    "boto3>=1.35.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "moto[dynamodb]>=5.0.0",
+    "requests>=2.31.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+markers = [
+    "integration: marks tests that hit a live API (deselect with '-m \"not integration\"')",
 ]

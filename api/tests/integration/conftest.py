@@ -59,3 +59,58 @@ def create_user(api_url, cleanup):
         return response
 
     return _create
+
+
+@pytest.fixture
+def cleanup_building(api_url):
+    """Tracks building IDs and deletes them after the test."""
+    building_ids = []
+
+    def _track(building_id: str):
+        building_ids.append(building_id)
+
+    yield _track
+
+    for building_id in building_ids:
+        requests.delete(
+            f"{api_url}/buildings/{building_id}",
+            json={"_user": {"is_admin": True}},
+        )
+
+
+@pytest.fixture
+def cleanup_room(api_url):
+    """Tracks room IDs and deletes them after the test."""
+    rooms = []
+
+    def _track(building_id: str, room_id: str):
+        rooms.append((building_id, room_id))
+
+    yield _track
+
+    for building_id, room_id in rooms:
+        requests.delete(
+            f"{api_url}/buildings/{building_id}/rooms/{room_id}",
+            json={"_user": {"is_admin": True}},
+        )
+
+
+@pytest.fixture
+def create_building(api_url, cleanup_building):
+    """Helper fixture to create a building and return the building_id."""
+
+    def _create(name: str, address: str, num_floors: int):
+        response = requests.post(
+            f"{api_url}/buildings/",
+            json={
+                "name": name,
+                "address": address,
+                "num_floors": num_floors,
+                "_user": {"is_admin": True},
+            },
+        )
+        building_id = response.json()["building"]["building_id"]
+        cleanup_building(building_id)
+        return building_id
+
+    return _create

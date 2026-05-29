@@ -17,6 +17,9 @@ class TestSignup:
         assert body["user"]["email"] == unique_email
         assert body["user"]["name"] == "New User"
         assert "user_id" in body["user"]
+        assert body["user"]["is_admin"] == False
+        assert body["user"]["access_level"] == 1
+        assert body["user"]["access_level_name"] == "Employee"
         cleanup(body["user"]["user_id"])
 
     def test_signup_duplicate_email_returns_error(self, api_url, unique_email, create_user):
@@ -60,6 +63,9 @@ class TestLogin:
         body = response.json()
         assert body["message"] == "Login successful"
         assert body["user"]["email"] == unique_email
+        assert body["user"]["is_admin"] == False
+        assert body["user"]["access_level"] == 1
+        assert body["user"]["access_level_name"] == "Employee"
 
     def test_login_with_wrong_password(self, api_url, unique_email, create_user):
         create_user(unique_email, password="RightPass1")
@@ -91,6 +97,9 @@ class TestGetUser:
         body = response.json()
         assert body["user"]["email"] == unique_email
         assert body["user"]["name"] == "Fetchable User"
+        assert body["user"]["is_admin"] == False
+        assert body["user"]["access_level"] == 1
+        assert body["user"]["access_level_name"] == "Employee"
 
     def test_get_user_nonexistent_returns_error(self, api_url):
         response = requests.get(f"{api_url}/users/nonexistent-id-12345")

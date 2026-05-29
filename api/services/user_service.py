@@ -6,7 +6,7 @@ import secrets
 import boto3
 from boto3.dynamodb.conditions import Key
 
-from models.user import CreateUserRequest, LoginRequest
+from models.user import CreateUserRequest, LoginRequest, AccessLevel
 
 
 class UserService:
@@ -65,6 +65,8 @@ class UserService:
             "name": request.name,
             "password_hash": password_hash,
             "salt": salt,
+            "is_admin": request.is_admin,
+            "access_level": request.access_level,
             "entity_type": "USER",
         }
 
@@ -74,6 +76,9 @@ class UserService:
             "user_id": user_id,
             "email": request.email,
             "name": request.name,
+            "is_admin": request.is_admin,
+            "access_level": request.access_level,
+            "access_level_name": AccessLevel.name_for(request.access_level),
         }
 
     def login(self, request: LoginRequest) -> dict:
@@ -100,6 +105,9 @@ class UserService:
                 "user_id": user["user_id"],
                 "email": user["email"],
                 "name": user["name"],
+                "is_admin": user.get("is_admin", False),
+                "access_level": int(user.get("access_level", AccessLevel.EMPLOYEE)),
+                "access_level_name": AccessLevel.name_for(int(user.get("access_level", AccessLevel.EMPLOYEE))),
             },
         }
 
@@ -117,6 +125,9 @@ class UserService:
             "user_id": item["user_id"],
             "email": item["email"],
             "name": item["name"],
+            "is_admin": item.get("is_admin", False),
+            "access_level": int(item.get("access_level", AccessLevel.EMPLOYEE)),
+            "access_level_name": AccessLevel.name_for(int(item.get("access_level", AccessLevel.EMPLOYEE))),
         }
 
     def delete_user(self, user_id: str) -> None:

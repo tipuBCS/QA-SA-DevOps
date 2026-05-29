@@ -7,6 +7,7 @@ from boto3.dynamodb.conditions import Key
 from models.room import CreateRoomRequest
 from models.user import AccessLevel
 from services.building_service import BuildingService
+from services.room_type_service import RoomTypeService
 
 
 class RoomService:
@@ -18,6 +19,7 @@ class RoomService:
             table_name = os.environ.get("DB_TABLE_NAME", "room-booker")
             self.table = dynamodb.Table(table_name)
         self.building_service = BuildingService(table_resource=self.table)
+        self.room_type_service = RoomTypeService(table_resource=self.table)
 
     def create_room(self, request: CreateRoomRequest) -> dict:
         """Create a room in a building on a specific floor."""
@@ -34,6 +36,12 @@ class RoomService:
         if not AccessLevel.is_valid(request.min_access_level):
             raise ValueError("Invalid access level")
 
+        # Validate and resolve room type if provided
+        room_type_name = ""
+        if request.room_type_id:
+            room_type = self.room_type_service.get_room_type(request.room_type_id)
+            room_type_name = room_type["name"]
+
         room_id = str(uuid.uuid4())
 
         item = {
@@ -49,6 +57,8 @@ class RoomService:
             "capacity": request.capacity,
             "min_access_level": request.min_access_level,
             "min_access_level_name": AccessLevel.name_for(request.min_access_level),
+            "room_type_id": request.room_type_id,
+            "room_type_name": room_type_name,
             "amenities": request.amenities,
             "entity_type": "ROOM",
         }
@@ -64,6 +74,8 @@ class RoomService:
             "capacity": request.capacity,
             "min_access_level": request.min_access_level,
             "min_access_level_name": AccessLevel.name_for(request.min_access_level),
+            "room_type_id": request.room_type_id,
+            "room_type_name": room_type_name,
             "amenities": request.amenities,
         }
 
@@ -85,6 +97,8 @@ class RoomService:
             "capacity": int(item["capacity"]),
             "min_access_level": int(item["min_access_level"]),
             "min_access_level_name": AccessLevel.name_for(int(item["min_access_level"])),
+            "room_type_id": item.get("room_type_id", ""),
+            "room_type_name": item.get("room_type_name", ""),
             "amenities": item.get("amenities", []),
         }
 
@@ -111,6 +125,8 @@ class RoomService:
                 "capacity": int(item["capacity"]),
                 "min_access_level": int(item["min_access_level"]),
                 "min_access_level_name": AccessLevel.name_for(int(item["min_access_level"])),
+                "room_type_id": item.get("room_type_id", ""),
+                "room_type_name": item.get("room_type_name", ""),
                 "amenities": item.get("amenities", []),
             }
             for item in result.get("Items", [])

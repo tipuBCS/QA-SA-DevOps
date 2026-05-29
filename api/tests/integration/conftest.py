@@ -114,3 +114,36 @@ def create_building(api_url, cleanup_building):
         return building_id
 
     return _create
+
+
+@pytest.fixture
+def cleanup_room_type(api_url):
+    """Tracks room type IDs and deletes them after the test."""
+    room_type_ids = []
+
+    def _track(room_type_id: str):
+        room_type_ids.append(room_type_id)
+
+    yield _track
+
+    for room_type_id in room_type_ids:
+        requests.delete(
+            f"{api_url}/room-types/{room_type_id}",
+            json={"_user": {"is_admin": True}},
+        )
+
+
+@pytest.fixture
+def create_room_type(api_url, cleanup_room_type):
+    """Helper fixture to create a room type and return the room_type_id."""
+
+    def _create(name: str, description: str = ""):
+        response = requests.post(
+            f"{api_url}/room-types/",
+            json={"name": name, "description": description, "_user": {"is_admin": True}},
+        )
+        room_type_id = response.json()["room_type"]["room_type_id"]
+        cleanup_room_type(room_type_id)
+        return room_type_id
+
+    return _create

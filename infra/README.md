@@ -42,7 +42,14 @@ The `cdk.json` file tells the CDK Toolkit how to execute your app.
 
 ### Deploying Steps
 
-1. Run `npm run deploy`
+1. Run `npm run deploy` to deploy all stacks
+
+Or use the deploy script to target specific stacks:
+```bash
+./deploy.sh api        # Deploy only the API stack
+./deploy.sh frontend   # Deploy only the Frontend stack
+./deploy.sh all        # Deploy everything (default)
+```
 
 
 ## Frontend stack

@@ -5,9 +5,7 @@
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
-    "cdk": "cdk",
-    "buildui": "cd ../ui && npm run build && cd ../infra",
-    "deploy": "npm run buildui && cdk deploy --profile tipub-Admin --all --require-approval never"
+    "cdk": "cdk"
   },
   "devDependencies": {
     "@types/jest": "^30",

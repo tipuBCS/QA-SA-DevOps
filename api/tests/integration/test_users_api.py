@@ -37,6 +37,15 @@ class TestSignup:
 
         assert response.status_code in (400, 422, 500)
 
+    def test_signup_invalid_password(self, api_url, unique_email):
+        response = requests.post(
+            f"{api_url}/users/signup",
+            json={"email": unique_email, "password": "short", "name": "Weak Pass"},
+        )
+
+        assert response.status_code == 409
+        assert "Password" in response.json()["error"]
+
 
 class TestLogin:
     def test_login_with_valid_credentials(self, api_url, unique_email, create_user):

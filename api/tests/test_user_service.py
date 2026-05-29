@@ -8,7 +8,7 @@ class TestCreateUser:
     def test_creates_user_successfully(self, dynamodb_table):
         service = UserService(table_resource=dynamodb_table)
         request = CreateUserRequest(
-            email="alice@example.com", password="securepass123", name="Alice"
+            email="alice@example.com", password="Secure123", name="Alice"
         )
 
         result = service.create_user(request)
@@ -20,7 +20,7 @@ class TestCreateUser:
     def test_stores_user_in_dynamodb(self, dynamodb_table):
         service = UserService(table_resource=dynamodb_table)
         request = CreateUserRequest(
-            email="bob@example.com", password="password123", name="Bob"
+            email="bob@example.com", password="Password123", name="Bob"
         )
 
         result = service.create_user(request)
@@ -36,7 +36,7 @@ class TestCreateUser:
     def test_does_not_store_plain_password(self, dynamodb_table):
         service = UserService(table_resource=dynamodb_table)
         request = CreateUserRequest(
-            email="carol@example.com", password="mypassword", name="Carol"
+            email="carol@example.com", password="MyPassword1", name="Carol"
         )
 
         result = service.create_user(request)
@@ -50,15 +50,47 @@ class TestCreateUser:
     def test_raises_error_for_duplicate_email(self, dynamodb_table):
         service = UserService(table_resource=dynamodb_table)
         request = CreateUserRequest(
-            email="dupe@example.com", password="pass123", name="First"
+            email="dupe@example.com", password="Pass1234", name="First"
         )
         service.create_user(request)
 
         with pytest.raises(ValueError, match="already exists"):
             service.create_user(
                 CreateUserRequest(
-                    email="dupe@example.com", password="other", name="Second"
+                    email="dupe@example.com", password="Other123", name="Second"
                 )
+            )
+
+    def test_raises_error_for_short_password(self, dynamodb_table):
+        service = UserService(table_resource=dynamodb_table)
+
+        with pytest.raises(ValueError, match="at least 8 characters"):
+            service.create_user(
+                CreateUserRequest(email="short@example.com", password="Ab1", name="Short")
+            )
+
+    def test_raises_error_for_password_without_uppercase(self, dynamodb_table):
+        service = UserService(table_resource=dynamodb_table)
+
+        with pytest.raises(ValueError, match="uppercase"):
+            service.create_user(
+                CreateUserRequest(email="noup@example.com", password="lowercase1", name="NoUp")
+            )
+
+    def test_raises_error_for_password_without_lowercase(self, dynamodb_table):
+        service = UserService(table_resource=dynamodb_table)
+
+        with pytest.raises(ValueError, match="lowercase"):
+            service.create_user(
+                CreateUserRequest(email="nolow@example.com", password="UPPERCASE1", name="NoLow")
+            )
+
+    def test_raises_error_for_password_without_number(self, dynamodb_table):
+        service = UserService(table_resource=dynamodb_table)
+
+        with pytest.raises(ValueError, match="number"):
+            service.create_user(
+                CreateUserRequest(email="nonum@example.com", password="NoNumbers", name="NoNum")
             )
 
 
@@ -66,10 +98,10 @@ class TestLogin:
     def test_login_successful_with_correct_credentials(self, dynamodb_table):
         service = UserService(table_resource=dynamodb_table)
         service.create_user(
-            CreateUserRequest(email="user@example.com", password="correct", name="User")
+            CreateUserRequest(email="user@example.com", password="Correct1x", name="User")
         )
 
-        result = service.login(LoginRequest(email="user@example.com", password="correct"))
+        result = service.login(LoginRequest(email="user@example.com", password="Correct1x"))
 
         assert result["message"] == "Login successful"
         assert result["user"]["email"] == "user@example.com"
@@ -77,24 +109,24 @@ class TestLogin:
     def test_login_fails_with_wrong_password(self, dynamodb_table):
         service = UserService(table_resource=dynamodb_table)
         service.create_user(
-            CreateUserRequest(email="user@example.com", password="correct", name="User")
+            CreateUserRequest(email="user@example.com", password="Correct1x", name="User")
         )
 
         with pytest.raises(ValueError, match="Invalid email or password"):
-            service.login(LoginRequest(email="user@example.com", password="wrong"))
+            service.login(LoginRequest(email="user@example.com", password="WrongPass1"))
 
     def test_login_fails_with_nonexistent_email(self, dynamodb_table):
         service = UserService(table_resource=dynamodb_table)
 
         with pytest.raises(ValueError, match="Invalid email or password"):
-            service.login(LoginRequest(email="nobody@example.com", password="pass"))
+            service.login(LoginRequest(email="nobody@example.com", password="ValidPass1"))
 
 
 class TestGetUser:
     def test_get_user_returns_user_data(self, dynamodb_table):
         service = UserService(table_resource=dynamodb_table)
         created = service.create_user(
-            CreateUserRequest(email="get@example.com", password="pass", name="GetMe")
+            CreateUserRequest(email="get@example.com", password="ValidPass1", name="GetMe")
         )
 
         result = service.get_user(created["user_id"])
@@ -106,7 +138,7 @@ class TestGetUser:
     def test_get_user_does_not_return_password(self, dynamodb_table):
         service = UserService(table_resource=dynamodb_table)
         created = service.create_user(
-            CreateUserRequest(email="safe@example.com", password="secret", name="Safe")
+            CreateUserRequest(email="safe@example.com", password="Secret123", name="Safe")
         )
 
         result = service.get_user(created["user_id"])
@@ -126,7 +158,7 @@ class TestDeleteUser:
     def test_delete_user_removes_from_table(self, dynamodb_table):
         service = UserService(table_resource=dynamodb_table)
         created = service.create_user(
-            CreateUserRequest(email="delete@example.com", password="pass", name="DeleteMe")
+            CreateUserRequest(email="delete@example.com", password="ValidPass1", name="DeleteMe")
         )
 
         service.delete_user(created["user_id"])

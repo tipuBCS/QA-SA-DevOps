@@ -29,8 +29,21 @@ class UserService:
         hashed = hashlib.pbkdf2_hmac("sha256", password.encode(), salt.encode(), 100000)
         return hashed.hex(), salt
 
+    def _validate_password(self, password: str) -> None:
+        """Validate password meets requirements. Raises ValueError if invalid."""
+        if len(password) < 8:
+            raise ValueError("Password must be at least 8 characters long")
+        if not any(c.isupper() for c in password):
+            raise ValueError("Password must contain at least one uppercase letter")
+        if not any(c.islower() for c in password):
+            raise ValueError("Password must contain at least one lowercase letter")
+        if not any(c.isdigit() for c in password):
+            raise ValueError("Password must contain at least one number")
+
     def create_user(self, request: CreateUserRequest) -> dict:
-        """Create a new user. Raises ValueError if email already exists."""
+        """Create a new user. Raises ValueError if email already exists or password is invalid."""
+        self._validate_password(request.password)
+
         # Check if user already exists
         existing = self.table.query(
             IndexName="GSI1",

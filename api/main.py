@@ -1,5 +1,6 @@
 from aws_lambda_powertools import Logger, Tracer, Metrics
 from aws_lambda_powertools.event_handler import APIGatewayRestResolver
+from aws_lambda_powertools.event_handler.api_gateway import CORSConfig
 from aws_lambda_powertools.utilities.typing import LambdaContext
 
 from routes.users import router as users_router
@@ -8,7 +9,13 @@ from routes.users import router as users_router
 logger = Logger()
 tracer = Tracer()
 metrics = Metrics()
-app = APIGatewayRestResolver()
+
+cors_config = CORSConfig(
+    allow_origin="*",
+    allow_headers=["Content-Type"],
+    max_age=300,
+)
+app = APIGatewayRestResolver(cors=cors_config)
 
 # Register route modules
 app.include_router(users_router, prefix="/users")

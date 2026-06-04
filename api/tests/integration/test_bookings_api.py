@@ -100,7 +100,7 @@ class TestCancelBooking:
         assert "cancelled" in response.json()["message"].lower()
 
     def test_cancel_booking_rejected_for_non_owner(
-        self, api_url, create_building, create_room, create_booking
+        self, api_url, admin_headers, create_building, create_room, create_booking
     ):
         import uuid
 
@@ -110,10 +110,12 @@ class TestCancelBooking:
 
         # Create a different user and try to cancel
         other_email = f"other-{uuid.uuid4().hex[:8]}@integration-test.com"
-        requests.post(
+        signup_resp = requests.post(
             f"{api_url}/users/signup",
             json={"email": other_email, "password": "OtherUser1", "name": "Other"},
         )
+        other_user_id = signup_resp.json()["user"]["user_id"]
+
         login_resp = requests.post(
             f"{api_url}/users/login",
             json={"email": other_email, "password": "OtherUser1"},
@@ -126,6 +128,9 @@ class TestCancelBooking:
         )
 
         assert response.status_code == 403
+
+        # Cleanup the other user
+        requests.delete(f"{api_url}/users/{other_user_id}", headers=admin_headers)
 
     def test_cancel_booking_not_found(self, api_url, admin_headers):
         response = requests.delete(

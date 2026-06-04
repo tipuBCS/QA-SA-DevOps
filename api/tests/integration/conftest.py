@@ -57,9 +57,9 @@ def unique_email():
 
 
 @pytest.fixture
-def user_token(api_url, unique_email):
-    """Create a regular user and return their JWT token."""
-    requests.post(
+def user_token(api_url, admin_headers, unique_email):
+    """Create a regular user, return their JWT token, and clean up after."""
+    signup_resp = requests.post(
         f"{api_url}/users/signup",
         json={
             "email": unique_email,
@@ -67,11 +67,18 @@ def user_token(api_url, unique_email):
             "name": "Test User",
         },
     )
+    user_id = signup_resp.json()["user"]["user_id"]
+
     login_response = requests.post(
         f"{api_url}/users/login",
         json={"email": unique_email, "password": "TestPass123"},
     )
-    return login_response.json()["token"]
+    token = login_response.json()["token"]
+
+    yield token
+
+    # Cleanup: delete the user after test
+    requests.delete(f"{api_url}/users/{user_id}", headers=admin_headers)
 
 
 @pytest.fixture

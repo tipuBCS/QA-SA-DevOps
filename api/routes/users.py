@@ -1,9 +1,8 @@
 from aws_lambda_powertools.event_handler.api_gateway import Router, Response
 from aws_lambda_powertools import Logger, Tracer
 
-import json
-
 from models.user import CreateUserRequest, LoginRequest
+from routes import to_json
 from services.user_service import UserService
 
 logger = Logger()
@@ -23,7 +22,7 @@ def signup():
         return Response(
             status_code=400,
             content_type="application/json",
-            body=json.dumps({"error": f"Missing required fields: {e}"}),
+            body=to_json({"error": f"Missing required fields: {e}"}),
         )
 
     logger.info("User signup request", extra={"email": request.email})
@@ -34,13 +33,12 @@ def signup():
         return Response(
             status_code=409,
             content_type="application/json",
-            body=json.dumps({"error": str(e)}),
+            body=to_json({"error": str(e)}),
         )
-
     return Response(
         status_code=201,
         content_type="application/json",
-        body=json.dumps({"message": "User created successfully", "user": user}),
+        body=to_json({"message": "User created successfully", "user": user}),
     )
 
 
@@ -54,7 +52,7 @@ def login():
         return Response(
             status_code=400,
             content_type="application/json",
-            body=json.dumps({"error": f"Missing required fields: {e}"}),
+            body=to_json({"error": f"Missing required fields: {e}"}),
         )
 
     logger.info("User login request", extra={"email": request.email})
@@ -65,13 +63,15 @@ def login():
         return Response(
             status_code=401,
             content_type="application/json",
-            body=json.dumps({"error": str(e)}),
+            body=to_json({"error": str(e)}),
         )
+
+    logger.info("User login executed successfully ", extra={"result": result})
 
     return Response(
         status_code=200,
         content_type="application/json",
-        body=json.dumps(result),
+        body=to_json(result),
     )
 
 
@@ -86,13 +86,13 @@ def get_user(user_id: str):
         return Response(
             status_code=404,
             content_type="application/json",
-            body=json.dumps({"error": str(e)}),
+            body=to_json({"error": str(e)}),
         )
 
     return Response(
         status_code=200,
         content_type="application/json",
-        body=json.dumps({"user": user}),
+        body=to_json({"user": user}),
     )
 
 
@@ -107,11 +107,11 @@ def delete_user(user_id: str):
         return Response(
             status_code=404,
             content_type="application/json",
-            body=json.dumps({"error": str(e)}),
+            body=to_json({"error": str(e)}),
         )
 
     return Response(
         status_code=200,
         content_type="application/json",
-        body=json.dumps({"message": "User deleted successfully"}),
+        body=to_json({"message": "User deleted successfully"}),
     )

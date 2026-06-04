@@ -58,6 +58,7 @@ class TestLogin:
             f"{api_url}/users/login",
             json={"email": unique_email, "password": "CorrectPass1"},
         )
+        print(response.json())
 
         assert response.status_code == 200
         body = response.json()

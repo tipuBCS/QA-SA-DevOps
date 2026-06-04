@@ -12,24 +12,38 @@ api/
 │   ├── user.py          # CreateUserRequest, LoginRequest, AccessLevel
 │   ├── building.py      # CreateBuildingRequest
 │   ├── room.py          # CreateRoomRequest
+│   ├── room_type.py     # CreateRoomTypeRequest
 │   └── booking.py       # BookRoomRequest
+├── typings/
+│   ├── user.py          # UserItem, User TypedDicts
+│   ├── building.py      # BuildingItem, Building TypedDicts
+│   ├── room.py          # RoomItem, Room TypedDicts
+│   ├── room_type.py     # RoomTypeItem, RoomType TypedDicts
+│   └── booking.py       # BookingItem, Booking TypedDicts
 ├── services/
 │   ├── user_service.py      # User CRUD + auth
 │   ├── building_service.py  # Building CRUD
 │   ├── room_service.py      # Room CRUD (validates building/floor)
+│   ├── room_type_service.py # Room type CRUD
 │   └── booking_service.py   # Booking operations (checks access level)
 ├── routes/
 │   ├── users.py         # /users/*
 │   ├── buildings.py     # /buildings/, /buildings/<id>
-│   ├── rooms.py         # /buildings/<id>/rooms/*
-│   └── bookings.py      # /buildings/<id>/rooms/<id>/book
+│   ├── rooms.py         # /buildings/<id>/rooms/*, booking creation
+│   ├── room_types.py    # /room-types/*
+│   └── bookings.py      # /bookings/* (cancel, list)
 ├── tests/
 │   ├── test_user_service.py
 │   ├── test_building_service.py
 │   ├── test_room_service.py
+│   ├── test_room_type_service.py
 │   ├── test_booking_service.py
 │   └── integration/
-│       └── test_users_api.py
+│       ├── test_users_api.py
+│       ├── test_buildings_api.py
+│       ├── test_rooms_api.py
+│       ├── test_room_types_api.py
+│       └── test_bookings_api.py
 └── main.py              # Lambda handler + route registration
 ```
 
@@ -52,9 +66,17 @@ api/
 - `GET /buildings/<id>/rooms` — List rooms in a building
 - `GET /buildings/<id>/rooms/<room_id>` — Get a room
 - `DELETE /buildings/<id>/rooms/<room_id>` — Delete a room
-
-### Bookings (access level checked)
 - `POST /buildings/<id>/rooms/<room_id>/book` — Book a room
+
+### Room Types (admin only for create/delete)
+- `POST /room-types/` — Create a room type
+- `GET /room-types/` — List all room types
+- `GET /room-types/<id>` — Get a room type
+- `DELETE /room-types/<id>` — Delete a room type
+
+### Bookings (authenticated)
+- `DELETE /bookings/<booking_id>` — Cancel a booking
+- `GET /bookings/user/<user_id>` — List bookings for a user
 
 ## Access Levels
 
@@ -90,4 +112,24 @@ Get this value from the CDK output after running `./deploy.sh api` in the `infra
 Then run:
 ```bash
 uv run pytest -m integration -v
+```
+
+## Deployment
+
+To deploy the service, run the following from the `infra/` directory:
+
+```bash
+npm run deploy
+```
+
+Or target specific stacks:
+```bash
+./deploy.sh api        # Deploy only the API stack
+./deploy.sh frontend   # Deploy only the Frontend stack
+./deploy.sh all        # Deploy everything (default)
+```
+
+Prerequisite: bootstrap the environment first if not already done:
+```bash
+npx cdk bootstrap --profile {AWS_PROFILE}
 ```

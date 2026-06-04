@@ -1,9 +1,7 @@
 from aws_lambda_powertools.event_handler.api_gateway import Router, Response
 from aws_lambda_powertools import Logger, Tracer
 
-import json
-
-from models.booking import BookRoomRequest
+from routes import to_json
 from services.booking_service import BookingService
 
 logger = Logger()
@@ -13,46 +11,79 @@ router = Router()
 booking_service = BookingService()
 
 
-@router.post("/<building_id>/rooms/<room_id>/book")
+@router.delete("/<booking_id>")
 @tracer.capture_method
-def book_room(building_id: str, room_id: str):
+def cancel_booking(booking_id: str):
     body = router.current_event.json_body
 
+    
+    # TODO: Auth
+    # Check if logged in and check if admin user
+    
+    # user = body.get("_user", {})
+    # if not user.get("user_id"):
+    #     return Response(
+    #         status_code=401,
+    #         content_type="application/json",
+    #         body=to_json({"error": "Authentication required"}),
+    #     )
+
+    # Check if user owns booking (or is admin)
+    # TODO Auth Checking
+    # userIsAdmin = user.get("isAdmin")
+    # userOwnsBooking = booking["user_id"] == user.get("user_id")
+    # if not userIsAdmin or not userOwnsBooking:
+    #     return Response(
+    #         status_code=400,
+    #         content_type="application/json",
+    #         body=to_json(
+    #             {"error": "You are not authorised to cancel this booking"}
+    #         ),
+    #     )
+
+    # Get booking
+    try:
+        booking = booking_service.get_booking(booking_id)
+    except ValueError as e:
+        return Response(
+            status_code=400,
+            content_type="application/json",
+            body=to_json({"error": f"Invalid booking id: {booking_id}"}),
+        )
+
+    
+
+    try:
+        booking_service.cancel_booking(booking_id)
+    except (TypeError, KeyError) as e:
+        return Response(
+            status_code=400,
+            content_type="application/json",
+            body=to_json({"error": f"Missing required fields: {e}"}),
+        )
+
+    return Response(
+        status_code=200,
+        content_type="application/json",
+        body=to_json({"message": "Booking cancelled successfully"}),
+    )
+
+
+@router.get("/user/<user_id>")
+@tracer.capture_method
+def list_user_bookings(user_id: str):
+    body = router.current_event.json_body or {}
     user = body.get("_user", {})
     if not user.get("user_id"):
         return Response(
             status_code=401,
             content_type="application/json",
-            body=json.dumps({"error": "Authentication required"}),
+            body=to_json({"error": "Authentication required"}),
         )
 
-    try:
-        request = BookRoomRequest(
-            room_id=room_id,
-            user_id=user["user_id"],
-            date=body["date"],
-            start_time=body["start_time"],
-            end_time=body["end_time"],
-            purpose=body.get("purpose", ""),
-        )
-    except (TypeError, KeyError) as e:
-        return Response(
-            status_code=400,
-            content_type="application/json",
-            body=json.dumps({"error": f"Missing required fields: {e}"}),
-        )
-
-    try:
-        booking = booking_service.book_room(request, user.get("access_level", 1))
-    except ValueError as e:
-        return Response(
-            status_code=403,
-            content_type="application/json",
-            body=json.dumps({"error": str(e)}),
-        )
-
+    bookings = booking_service.list_user_bookings(user_id)
     return Response(
-        status_code=201,
+        status_code=200,
         content_type="application/json",
-        body=json.dumps({"message": "Room booked successfully", "booking": booking}),
+        body=to_json({"bookings": bookings}),
     )

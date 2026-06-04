@@ -1,9 +1,8 @@
 from aws_lambda_powertools.event_handler.api_gateway import Router, Response
 from aws_lambda_powertools import Logger, Tracer
 
-import json
-
 from models.building import CreateBuildingRequest
+from routes import to_json
 from services.building_service import BuildingService
 
 logger = Logger()
@@ -24,7 +23,7 @@ def create_building():
         return Response(
             status_code=403,
             content_type="application/json",
-            body=json.dumps({"error": "Admin access required"}),
+            body=to_json({"error": "Admin access required"}),
         )
 
     try:
@@ -37,7 +36,7 @@ def create_building():
         return Response(
             status_code=400,
             content_type="application/json",
-            body=json.dumps({"error": f"Missing required fields: {e}"}),
+            body=to_json({"error": f"Missing required fields: {e}"}),
         )
 
     try:
@@ -46,13 +45,13 @@ def create_building():
         return Response(
             status_code=400,
             content_type="application/json",
-            body=json.dumps({"error": str(e)}),
+            body=to_json({"error": str(e)}),
         )
 
     return Response(
         status_code=201,
         content_type="application/json",
-        body=json.dumps({"message": "Building created successfully", "building": building}),
+        body=to_json({"message": "Building created successfully", "building": building}),
     )
 
 
@@ -63,7 +62,7 @@ def list_buildings():
     return Response(
         status_code=200,
         content_type="application/json",
-        body=json.dumps({"buildings": buildings}),
+        body=to_json({"buildings": buildings}),
     )
 
 
@@ -76,13 +75,13 @@ def get_building(building_id: str):
         return Response(
             status_code=404,
             content_type="application/json",
-            body=json.dumps({"error": str(e)}),
+            body=to_json({"error": str(e)}),
         )
 
     return Response(
         status_code=200,
         content_type="application/json",
-        body=json.dumps({"building": building}),
+        body=to_json({"building": building}),
     )
 
 
@@ -95,7 +94,7 @@ def delete_building(building_id: str):
         return Response(
             status_code=403,
             content_type="application/json",
-            body=json.dumps({"error": "Admin access required"}),
+            body=to_json({"error": "Admin access required"}),
         )
 
     try:
@@ -104,11 +103,11 @@ def delete_building(building_id: str):
         return Response(
             status_code=404,
             content_type="application/json",
-            body=json.dumps({"error": str(e)}),
+            body=to_json({"error": str(e)}),
         )
 
     return Response(
         status_code=200,
         content_type="application/json",
-        body=json.dumps({"message": "Building deleted successfully"}),
+        body=to_json({"message": "Building deleted successfully"}),
     )

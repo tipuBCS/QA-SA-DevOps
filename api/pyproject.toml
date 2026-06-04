@@ -22,3 +22,9 @@ pythonpath = ["."]
 markers = [
     "integration: marks tests that hit a live API (deselect with '-m \"not integration\"')",
 ]
+
+[dependency-groups]
+dev = [
+    "boto3-stubs[dynamodb]>=1.43.18",
+    "pyright>=1.1.409",
+]

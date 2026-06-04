@@ -3,11 +3,16 @@ import uuid
 import hashlib
 import secrets
 
+from aws_lambda_powertools import Logger
+
 import boto3
 from boto3.dynamodb.conditions import Key
+from typing import cast, Optional
 
+from typings.user import User, UserItem
 from models.user import CreateUserRequest, LoginRequest, AccessLevel
 
+logger = Logger()
 
 class UserService:
     def __init__(self, table_resource=None):
@@ -22,7 +27,7 @@ class UserService:
             table_name = os.environ.get("DB_TABLE_NAME", "room-booker")
             self.table = dynamodb.Table(table_name)
 
-    def _hash_password(self, password: str, salt: str = None) -> tuple[str, str]:
+    def _hash_password(self, password: str, salt: Optional[str] = None) -> tuple[str, str]:
         """Hash a password with a salt. Returns (hash, salt)."""
         if salt is None:
             salt = secrets.token_hex(16)
@@ -40,7 +45,7 @@ class UserService:
         if not any(c.isdigit() for c in password):
             raise ValueError("Password must contain at least one number")
 
-    def create_user(self, request: CreateUserRequest) -> dict:
+    def create_user(self, request: CreateUserRequest) -> User:
         """Create a new user. Raises ValueError if email already exists or password is invalid."""
         self._validate_password(request.password)
 
@@ -55,7 +60,7 @@ class UserService:
         user_id = str(uuid.uuid4())
         password_hash, salt = self._hash_password(request.password)
 
-        item = {
+        item: UserItem = {
             "PK": f"USER#{user_id}",
             "SK": f"USER#{user_id}",
             "GSI1PK": f"EMAIL#{request.email}",
@@ -70,7 +75,7 @@ class UserService:
             "entity_type": "USER",
         }
 
-        self.table.put_item(Item=item)
+        self.table.put_item(Item=cast(dict, item))
 
         return {
             "user_id": user_id,
@@ -93,7 +98,7 @@ class UserService:
         if not items:
             raise ValueError("Invalid email or password")
 
-        user = items[0]
+        user = cast(UserItem, items[0])
         password_hash, _ = self._hash_password(request.password, user["salt"])
 
         if password_hash != user["password_hash"]:
@@ -105,13 +110,13 @@ class UserService:
                 "user_id": user["user_id"],
                 "email": user["email"],
                 "name": user["name"],
-                "is_admin": user.get("is_admin", False),
-                "access_level": int(user.get("access_level", AccessLevel.EMPLOYEE)),
-                "access_level_name": AccessLevel.name_for(int(user.get("access_level", AccessLevel.EMPLOYEE))),
+                "is_admin": user["is_admin"],
+                "access_level": user["access_level"],
+                "access_level_name": AccessLevel.name_for(user["access_level"]),
             },
         }
 
-    def get_user(self, user_id: str) -> dict:
+    def get_user(self, user_id: str) -> User:
         """Get a user by ID."""
         result = self.table.get_item(
             Key={"PK": f"USER#{user_id}", "SK": f"USER#{user_id}"}
@@ -120,14 +125,15 @@ class UserService:
         item = result.get("Item")
         if not item:
             raise ValueError("User not found")
+        item = cast(UserItem, item)
 
         return {
             "user_id": item["user_id"],
             "email": item["email"],
             "name": item["name"],
-            "is_admin": item.get("is_admin", False),
-            "access_level": int(item.get("access_level", AccessLevel.EMPLOYEE)),
-            "access_level_name": AccessLevel.name_for(int(item.get("access_level", AccessLevel.EMPLOYEE))),
+            "is_admin": item["is_admin"],
+            "access_level": item["access_level"],
+            "access_level_name": AccessLevel.name_for(item["access_level"]),
         }
 
     def delete_user(self, user_id: str) -> None:

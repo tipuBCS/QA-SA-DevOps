@@ -56,6 +56,7 @@ def create_user(api_url, cleanup):
         if response.status_code == 201:
             user_id = response.json()["user"]["user_id"]
             cleanup(user_id)
+        print("Created user: ", response.json())
         return response
 
     return _create
@@ -96,10 +97,38 @@ def cleanup_room(api_url):
 
 
 @pytest.fixture
+def create_room(api_url, cleanup_room):
+    """Helper fixture to create a room and return the room_id."""
+
+    def _create(
+        building_id: str,
+        floor: int = 2,
+        name: str = "test-room",
+        capacity: int = 10,
+        min_access_level: int = 1,
+    ):
+        response = requests.post(
+            f"{api_url}/buildings/{building_id}/rooms",
+            json={
+                "floor": floor,
+                "name": name,
+                "capacity": capacity,
+                "min_access_level": min_access_level,
+                "_user": {"is_admin": True},
+            },
+        )
+        room_id = response.json()["room"]["room_id"]
+        cleanup_room(building_id, room_id)
+        return room_id
+
+    return _create
+
+
+@pytest.fixture
 def create_building(api_url, cleanup_building):
     """Helper fixture to create a building and return the building_id."""
 
-    def _create(name: str, address: str, num_floors: int):
+    def _create(name: str = "test-building", address: str = "test-address", num_floors: int = 1):
         response = requests.post(
             f"{api_url}/buildings/",
             json={
@@ -140,10 +169,60 @@ def create_room_type(api_url, cleanup_room_type):
     def _create(name: str, description: str = ""):
         response = requests.post(
             f"{api_url}/room-types/",
-            json={"name": name, "description": description, "_user": {"is_admin": True}},
+            json={
+                "name": name,
+                "description": description,
+                "_user": {"is_admin": True},
+            },
         )
         room_type_id = response.json()["room_type"]["room_type_id"]
         cleanup_room_type(room_type_id)
         return room_type_id
+
+    return _create
+
+
+@pytest.fixture
+def cleanup_booking(api_url):
+    """Tracks booking IDs and cancels them after the test."""
+    booking_ids = []
+
+    def _track(booking_id: str):
+        booking_ids.append(booking_id)
+
+    yield _track
+
+    for booking_id in booking_ids:
+        requests.delete(
+            f"{api_url}/bookings/{booking_id}",
+            json={"_user": {"is_admin": True, "user_id": "cleanup"}},
+        )
+
+
+@pytest.fixture
+def create_booking(api_url, cleanup_booking):
+    """Helper fixture to create a booking and return the booking response."""
+
+    def _create(building_id: str, room_id: str, user_id: str = "test-user",
+                access_level: int = 1, date: str = "2026-06-15",
+                start_time: str = "09:00", end_time: str = "10:00",
+                purpose: str = "Test booking"):
+        response = requests.post(
+            f"{api_url}/buildings/{building_id}/rooms/{room_id}/book",
+            json={
+                "date": date,
+                "start_time": start_time,
+                "end_time": end_time,
+                "purpose": purpose,
+                "_user": {"user_id": user_id, "access_level": access_level},
+            },
+        )
+        print("Creating booking ..")
+        print(response.json())
+        if response.status_code == 201:
+            booking_id = response.json()["booking"]["booking_id"]
+            cleanup_booking(booking_id)
+            return booking_id   
+        raise ValueError(f"Failed to create booking: {response.status_code} - {response.json()}")
 
     return _create

@@ -1,9 +1,8 @@
 from aws_lambda_powertools.event_handler.api_gateway import Router, Response
 from aws_lambda_powertools import Logger, Tracer
 
-import json
-
 from models.room_type import CreateRoomTypeRequest
+from routes import to_json
 from services.room_type_service import RoomTypeService
 
 logger = Logger()
@@ -23,7 +22,7 @@ def create_room_type():
         return Response(
             status_code=403,
             content_type="application/json",
-            body=json.dumps({"error": "Admin access required"}),
+            body=to_json({"error": "Admin access required"}),
         )
 
     try:
@@ -35,7 +34,7 @@ def create_room_type():
         return Response(
             status_code=400,
             content_type="application/json",
-            body=json.dumps({"error": f"Missing required fields: {e}"}),
+            body=to_json({"error": f"Missing required fields: {e}"}),
         )
 
     try:
@@ -44,13 +43,13 @@ def create_room_type():
         return Response(
             status_code=409,
             content_type="application/json",
-            body=json.dumps({"error": str(e)}),
+            body=to_json({"error": str(e)}),
         )
 
     return Response(
         status_code=201,
         content_type="application/json",
-        body=json.dumps({"message": "Room type created successfully", "room_type": room_type}),
+        body=to_json({"message": "Room type created successfully", "room_type": room_type}),
     )
 
 
@@ -61,7 +60,7 @@ def list_room_types():
     return Response(
         status_code=200,
         content_type="application/json",
-        body=json.dumps({"room_types": room_types}),
+        body=to_json({"room_types": room_types}),
     )
 
 
@@ -74,7 +73,7 @@ def delete_room_type(room_type_id: str):
         return Response(
             status_code=403,
             content_type="application/json",
-            body=json.dumps({"error": "Admin access required"}),
+            body=to_json({"error": "Admin access required"}),
         )
 
     try:
@@ -83,11 +82,11 @@ def delete_room_type(room_type_id: str):
         return Response(
             status_code=404,
             content_type="application/json",
-            body=json.dumps({"error": str(e)}),
+            body=to_json({"error": str(e)}),
         )
 
     return Response(
         status_code=200,
         content_type="application/json",
-        body=json.dumps({"message": "Room type deleted successfully"}),
+        body=to_json({"message": "Room type deleted successfully"}),
     )

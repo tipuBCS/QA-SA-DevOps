@@ -25,7 +25,7 @@ app = APIGatewayRestResolver(cors=cors_config)
 app.include_router(users_router, prefix="/users")
 app.include_router(buildings_router, prefix="/buildings")
 app.include_router(rooms_router, prefix="/buildings")
-app.include_router(bookings_router, prefix="/buildings")
+app.include_router(bookings_router, prefix="/bookings")
 app.include_router(room_types_router, prefix="/room-types")
 
 

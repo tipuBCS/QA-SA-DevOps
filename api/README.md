@@ -101,15 +101,28 @@ uv run pytest -m "not integration"
 
 ### Integration tests
 
-Integration tests hit the live deployed API. Set `API_URL` in your `.env`:
+Integration tests hit the live deployed API. Set the following in your `.env`:
 
 ```
 API_URL=https://your-api-id.execute-api.eu-west-2.amazonaws.com/dev
+TEST_ADMIN_EMAIL=admin@room-booker.com
+TEST_ADMIN_PASSWORD=AdminPass123
 ```
 
-Get this value from the CDK output after running `./deploy.sh api` in the `infra` folder.
+Get the API_URL value from the CDK output after running `./deploy.sh api` in the `infra` folder.
 
-Then run:
+### Seed admin user
+
+Integration tests require a pre-seeded admin user in DynamoDB. Run this once after deploying:
+
+```bash
+AWS_PROFILE=your-profile-name uv run python scripts/seed_admin.py
+```
+
+This reads `TEST_ADMIN_EMAIL` and `TEST_ADMIN_PASSWORD` from `.env` and creates an admin user in the database. If the user already exists, it skips gracefully.
+
+### Run integration tests
+
 ```bash
 uv run pytest -m integration -v
 ```

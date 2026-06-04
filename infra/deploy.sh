@@ -6,6 +6,16 @@ source "$SCRIPT_DIR/.env"
 
 STACK="${1:-all}"
 
+# Pre-deploy: generate requirements.txt and install deps for Lambda layer
+echo "Generating requirements.txt for API dependencies..."
+cd "$SCRIPT_DIR/../api"
+uv export --no-dev --no-editable --no-hashes > requirements.txt
+
+echo "Installing dependencies into .deps/python..."
+rm -rf .deps
+uv pip install -r requirements.txt --target .deps/python --quiet
+cd "$SCRIPT_DIR"
+
 case "$STACK" in
   api)
     STACK_NAME="ApiStack-${STAGE}"

@@ -8,6 +8,7 @@ from models.room import CreateRoomRequest
 from models.booking import BookRoomRequest
 from models.user import AccessLevel
 
+pytestmark = pytest.mark.unit
 
 class TestBookRoom:
     def test_books_room_with_sufficient_access(self, dynamodb_table):

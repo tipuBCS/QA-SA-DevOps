@@ -3,10 +3,11 @@ name = "api"
 version = "0.1.0"
 description = "Room Booker API"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.12"
 dependencies = [
-    "aws-lambda-powertools>=3.23.0",
+    "aws-lambda-powertools>=3.29.0",
     "boto3>=1.35.0",
+    "PyJWT>=2.8.0",
 ]
 
 [project.optional-dependencies]
@@ -21,6 +22,7 @@ testpaths = ["tests"]
 pythonpath = ["."]
 markers = [
     "integration: marks tests that hit a live API (deselect with '-m \"not integration\"')",
+    "unit: marks unit tests (deselect with '-m \"not unit\"')",
 ]
 
 [dependency-groups]

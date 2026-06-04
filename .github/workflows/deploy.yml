@@ -41,6 +41,11 @@ jobs:
         working-directory: ui
         env:
           VITE_API_URL: ${{ vars.API_URL }}
+      - run: pip install uv
+      - run: uv export --no-dev --no-editable --no-hashes > requirements.txt
+        working-directory: api
+      - run: pip install -r requirements.txt -t .deps/python
+        working-directory: api
       - run: npx cdk deploy --all --require-approval never
         working-directory: infra
         env:

@@ -1,2 +1,6 @@
 .env
 .vscode
+
+# Pre-built Lambda layer dependencies
+api/.deps
+__pycache__/

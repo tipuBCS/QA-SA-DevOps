@@ -3,6 +3,7 @@ import pytest
 from services.user_service import UserService
 from models.user import CreateUserRequest, LoginRequest
 
+pytestmark = pytest.mark.unit
 
 class TestCreateUser:
     def test_creates_user_successfully(self, dynamodb_table):
@@ -105,6 +106,8 @@ class TestLogin:
 
         assert result["message"] == "Login successful"
         assert result["user"]["email"] == "user@example.com"
+        assert isinstance(result["token"], str)
+        assert len(result["token"]) > 0
 
     def test_login_fails_with_wrong_password(self, dynamodb_table):
         service = UserService(table_resource=dynamodb_table)

@@ -2,7 +2,7 @@ from aws_lambda_powertools.event_handler.api_gateway import Router, Response
 from aws_lambda_powertools import Logger, Tracer
 
 from models.building import CreateBuildingRequest
-from routes import to_json
+from routes import to_json, get_current_user
 from services.building_service import BuildingService
 
 logger = Logger()
@@ -15,16 +15,15 @@ building_service = BuildingService()
 @router.post("/")
 @tracer.capture_method
 def create_building():
-    body = router.current_event.json_body
-
-    # Check admin
-    user = body.get("_user", {})
-    if not user.get("is_admin"):
+    current_user = get_current_user(router)
+    if not current_user["is_admin"]:
         return Response(
             status_code=403,
             content_type="application/json",
             body=to_json({"error": "Admin access required"}),
         )
+
+    body = router.current_event.json_body
 
     try:
         request = CreateBuildingRequest(
@@ -88,9 +87,8 @@ def get_building(building_id: str):
 @router.delete("/<building_id>")
 @tracer.capture_method
 def delete_building(building_id: str):
-    body = router.current_event.json_body or {}
-    user = body.get("_user", {})
-    if not user.get("is_admin"):
+    current_user = get_current_user(router)
+    if not current_user["is_admin"]:
         return Response(
             status_code=403,
             content_type="application/json",

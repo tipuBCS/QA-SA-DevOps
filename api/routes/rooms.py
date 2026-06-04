@@ -3,7 +3,7 @@ from aws_lambda_powertools import Logger, Tracer
 
 from models.booking import BookRoomRequest
 from models.room import CreateRoomRequest
-from routes import to_json
+from routes import to_json, get_current_user
 from services.booking_service import BookingService
 from services.room_service import RoomService
 
@@ -18,15 +18,15 @@ booking_service = BookingService()
 @router.post("/<building_id>/rooms")
 @tracer.capture_method
 def create_room(building_id: str):
-    body = router.current_event.json_body
-
-    user = body.get("_user", {})
-    if not user.get("is_admin"):
+    current_user = get_current_user(router)
+    if not current_user["is_admin"]:
         return Response(
             status_code=403,
             content_type="application/json",
             body=to_json({"error": "Admin access required"}),
         )
+
+    body = router.current_event.json_body
 
     try:
         request = CreateRoomRequest(
@@ -93,9 +93,8 @@ def get_room(building_id: str, room_id: str):
 @router.delete("/<building_id>/rooms/<room_id>")
 @tracer.capture_method
 def delete_room(building_id: str, room_id: str):
-    body = router.current_event.json_body or {}
-    user = body.get("_user", {})
-    if not user.get("is_admin"):
+    current_user = get_current_user(router)
+    if not current_user["is_admin"]:
         return Response(
             status_code=403,
             content_type="application/json",
@@ -121,21 +120,15 @@ def delete_room(building_id: str, room_id: str):
 @router.post("/<building_id>/rooms/<room_id>/book")
 @tracer.capture_method
 def book_room(building_id: str, room_id: str):
-    body = router.current_event.json_body
+    current_user = get_current_user(router)
 
-    user = body.get("_user", {})
-    if not user.get("user_id"):
-        return Response(
-            status_code=401,
-            content_type="application/json",
-            body=to_json({"error": "Authentication required"}),
-        )
+    body = router.current_event.json_body
 
     try:
         request = BookRoomRequest(
             room_id=room_id,
             building_id=building_id,
-            user_id=user["user_id"],
+            user_id=current_user["user_id"],
             date=body["date"],
             start_time=body["start_time"],
             end_time=body["end_time"],
@@ -149,7 +142,7 @@ def book_room(building_id: str, room_id: str):
         )
 
     try:
-        booking = booking_service.book_room(request, user.get("access_level", 1))
+        booking = booking_service.book_room(request, current_user["access_level"])
     except ValueError as e:
         return Response(
             status_code=403,

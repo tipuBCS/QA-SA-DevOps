@@ -20,6 +20,7 @@ class TestSignup:
         assert body["user"]["is_admin"] == False
         assert body["user"]["access_level"] == 1
         assert body["user"]["access_level_name"] == "Employee"
+
         cleanup(body["user"]["user_id"])
 
     def test_signup_duplicate_email_returns_error(self, api_url, unique_email, create_user):
@@ -67,6 +68,7 @@ class TestLogin:
         assert body["user"]["is_admin"] == False
         assert body["user"]["access_level"] == 1
         assert body["user"]["access_level_name"] == "Employee"
+        assert len(body["token"]) > 0
 
     def test_login_with_wrong_password(self, api_url, unique_email, create_user):
         create_user(unique_email, password="RightPass1")
@@ -88,11 +90,11 @@ class TestLogin:
 
 
 class TestGetUser:
-    def test_get_user_returns_user_data(self, api_url, unique_email, create_user):
+    def test_get_user_returns_user_data(self, api_url, admin_headers, unique_email, create_user):
         resp = create_user(unique_email, name="Fetchable User")
         user_id = resp.json()["user"]["user_id"]
 
-        response = requests.get(f"{api_url}/users/{user_id}")
+        response = requests.get(f"{api_url}/users/{user_id}", headers=admin_headers)
 
         assert response.status_code == 200
         body = response.json()
@@ -102,15 +104,34 @@ class TestGetUser:
         assert body["user"]["access_level"] == 1
         assert body["user"]["access_level_name"] == "Employee"
 
-    def test_get_user_nonexistent_returns_error(self, api_url):
-        response = requests.get(f"{api_url}/users/nonexistent-id-12345")
+    def test_get_user_nonexistent_returns_error(self, api_url, admin_headers):
+        response = requests.get(f"{api_url}/users/nonexistent-id-12345", headers=admin_headers)
 
         assert response.status_code == 404
 
+    def test_get_user_without_token_returns_401(self, api_url, unique_email, create_user):
+        resp = create_user(unique_email)
+        user_id = resp.json()["user"]["user_id"]
+
+        response = requests.get(f"{api_url}/users/{user_id}")
+
+        assert response.status_code == 401
+
+    def test_get_user_with_invalid_token_returns_401(self, api_url, unique_email, create_user):
+        resp = create_user(unique_email)
+        user_id = resp.json()["user"]["user_id"]
+
+        response = requests.get(
+            f"{api_url}/users/{user_id}",
+            headers={"Authorization": "Bearer invalid.token.here"},
+        )
+
+        assert response.status_code == 401
+
 
 class TestFullFlow:
-    def test_signup_login_and_get_user(self, api_url, unique_email, cleanup):
-        """End-to-end: signup → login → get user by ID."""
+    def test_signup_login_and_get_user(self, api_url, admin_headers, unique_email, cleanup):
+        """End-to-end: signup → login → get user by ID (as admin)."""
         # Signup
         signup_resp = requests.post(
             f"{api_url}/users/signup",
@@ -128,7 +149,7 @@ class TestFullFlow:
         assert login_resp.status_code == 200
         assert login_resp.json()["user"]["user_id"] == user_id
 
-        # Get user
-        get_resp = requests.get(f"{api_url}/users/{user_id}")
+        # Get user (requires admin)
+        get_resp = requests.get(f"{api_url}/users/{user_id}", headers=admin_headers)
         assert get_resp.status_code == 200
         assert get_resp.json()["user"]["email"] == unique_email

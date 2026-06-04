@@ -2,7 +2,7 @@ from aws_lambda_powertools.event_handler.api_gateway import Router, Response
 from aws_lambda_powertools import Logger, Tracer
 
 from models.room_type import CreateRoomTypeRequest
-from routes import to_json
+from routes import to_json, get_current_user
 from services.room_type_service import RoomTypeService
 
 logger = Logger()
@@ -15,15 +15,15 @@ room_type_service = RoomTypeService()
 @router.post("/")
 @tracer.capture_method
 def create_room_type():
-    body = router.current_event.json_body
-
-    user = body.get("_user", {})
-    if not user.get("is_admin"):
+    current_user = get_current_user(router)
+    if not current_user["is_admin"]:
         return Response(
             status_code=403,
             content_type="application/json",
             body=to_json({"error": "Admin access required"}),
         )
+
+    body = router.current_event.json_body
 
     try:
         request = CreateRoomTypeRequest(
@@ -67,9 +67,8 @@ def list_room_types():
 @router.delete("/<room_type_id>")
 @tracer.capture_method
 def delete_room_type(room_type_id: str):
-    body = router.current_event.json_body or {}
-    user = body.get("_user", {})
-    if not user.get("is_admin"):
+    current_user = get_current_user(router)
+    if not current_user["is_admin"]:
         return Response(
             status_code=403,
             content_type="application/json",

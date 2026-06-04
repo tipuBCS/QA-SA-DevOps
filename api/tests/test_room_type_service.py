@@ -3,6 +3,7 @@ import pytest
 from services.room_type_service import RoomTypeService
 from models.room_type import CreateRoomTypeRequest
 
+pytestmark = pytest.mark.unit
 
 class TestCreateRoomType:
     def test_creates_room_type_successfully(self, dynamodb_table):

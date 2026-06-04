@@ -14,6 +14,9 @@ from models.user import CreateUserRequest, LoginRequest, AccessLevel
 
 logger = Logger()
 
+from services.auth_service import AuthService
+
+
 class UserService:
     def __init__(self, table_resource=None):
         """
@@ -26,8 +29,11 @@ class UserService:
             dynamodb = boto3.resource("dynamodb")
             table_name = os.environ.get("DB_TABLE_NAME", "room-booker")
             self.table = dynamodb.Table(table_name)
+        self.AuthService = AuthService()
 
-    def _hash_password(self, password: str, salt: Optional[str] = None) -> tuple[str, str]:
+    def _hash_password(
+        self, password: str, salt: Optional[str] = None
+    ) -> tuple[str, str]:
         """Hash a password with a salt. Returns (hash, salt)."""
         if salt is None:
             salt = secrets.token_hex(16)
@@ -104,6 +110,10 @@ class UserService:
         if password_hash != user["password_hash"]:
             raise ValueError("Invalid email or password")
 
+        token = AuthService.create_token(
+            user["user_id"], user["email"], user["is_admin"], int(user["access_level"]) # cast access_level to int as it is a "Decimal" Type when retrieved from dynamoDB
+        )
+
         return {
             "message": "Login successful",
             "user": {
@@ -114,6 +124,7 @@ class UserService:
                 "access_level": user["access_level"],
                 "access_level_name": AccessLevel.name_for(user["access_level"]),
             },
+            "token": token
         }
 
     def get_user(self, user_id: str) -> User:
@@ -146,6 +157,4 @@ class UserService:
         if not item:
             raise ValueError("User not found")
 
-        self.table.delete_item(
-            Key={"PK": f"USER#{user_id}", "SK": f"USER#{user_id}"}
-        )
+        self.table.delete_item(Key={"PK": f"USER#{user_id}", "SK": f"USER#{user_id}"})

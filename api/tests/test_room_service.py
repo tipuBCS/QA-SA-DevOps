@@ -6,6 +6,7 @@ from models.building import CreateBuildingRequest
 from models.room import CreateRoomRequest
 from models.user import AccessLevel
 
+pytestmark = pytest.mark.unit
 
 class TestCreateRoom:
     def test_creates_room_successfully(self, dynamodb_table):

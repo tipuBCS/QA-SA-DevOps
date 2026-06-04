@@ -1,5 +1,5 @@
 import { Stack, StackProps, Duration, CfnOutput, RemovalPolicy } from 'aws-cdk-lib/core';
-import { Function, Runtime, Code, LayerVersion } from 'aws-cdk-lib/aws-lambda';
+import { Function, Runtime, Code, LayerVersion, Architecture } from 'aws-cdk-lib/aws-lambda';
 import { RestApi, Cors, LambdaIntegration } from 'aws-cdk-lib/aws-apigateway';
 import { Table, BillingMode, AttributeType, ProjectionType } from 'aws-cdk-lib/aws-dynamodb';
 import { join } from 'path';
@@ -35,15 +35,23 @@ export class ApiStack extends Stack {
       `arn:aws:lambda:${this.region}:017000801446:layer:AWSLambdaPowertoolsPythonV3-python312-x86_64:7`
     );
 
+    // Dependencies layer (pre-built by deploy script into api/.deps/python)
+    const depsLayer = new LayerVersion(this, `DepsLayer-${stage}`, {
+      code: Code.fromAsset(join(__dirname, '../../../api/.deps')),
+      compatibleRuntimes: [Runtime.PYTHON_3_12],
+      description: 'API Python dependencies',
+      compatibleArchitectures: [Architecture.X86_64]
+    });
+
     // Lambda function with the API code
     const apiFunction = new Function(this, `ApiFunction-${stage}`, {
       functionName: `room-booker-api-${stage}`,
       runtime: Runtime.PYTHON_3_12,
       handler: 'main.lambda_handler',
       code: Code.fromAsset(join(__dirname, '../../../api'), {
-        exclude: ['.venv', 'tests', '__pycache__', '.pytest_cache', '.env', 'uv.lock'],
+        exclude: ['.venv', '.deps', 'tests', '__pycache__', '.pytest_cache', '.env', 'uv.lock'],
       }),
-      layers: [powertoolsLayer],
+      layers: [powertoolsLayer, depsLayer],
       timeout: Duration.seconds(30),
       memorySize: 256,
       environment: {

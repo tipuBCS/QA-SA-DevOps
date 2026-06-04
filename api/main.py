@@ -3,6 +3,7 @@ from aws_lambda_powertools.event_handler import APIGatewayRestResolver
 from aws_lambda_powertools.event_handler.api_gateway import CORSConfig
 from aws_lambda_powertools.utilities.typing import LambdaContext
 
+from middleware.auth_middleware import authenticate
 from routes.users import router as users_router
 from routes.buildings import router as buildings_router
 from routes.rooms import router as rooms_router
@@ -16,7 +17,7 @@ metrics = Metrics()
 
 cors_config = CORSConfig(
     allow_origin="*",
-    allow_headers=["Content-Type"],
+    allow_headers=["Content-Type", "Authorization"],
     max_age=300,
 )
 app = APIGatewayRestResolver(cors=cors_config)
@@ -28,10 +29,16 @@ app.include_router(rooms_router, prefix="/buildings")
 app.include_router(bookings_router, prefix="/bookings")
 app.include_router(room_types_router, prefix="/room-types")
 
-
 # Main Lambda handler
 @logger.inject_lambda_context
 @tracer.capture_lambda_handler
 @metrics.log_metrics
 def lambda_handler(event: dict, context: LambdaContext):
-    return app.resolve(event, context)
+    # Authenticate and attach user to event
+    result = authenticate(event)
+
+    # If authenticate returned an error response, short-circuit
+    if "statusCode" in result and result["statusCode"] == 401:
+        return result
+
+    return app.resolve(result, context)

@@ -3,6 +3,7 @@ import pytest
 from services.building_service import BuildingService
 from models.building import CreateBuildingRequest
 
+pytestmark = pytest.mark.unit
 
 class TestCreateBuilding:
     def test_creates_building_successfully(self, dynamodb_table):

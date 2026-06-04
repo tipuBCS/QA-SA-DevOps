@@ -2,8 +2,11 @@ from aws_lambda_powertools.event_handler.api_gateway import Router, Response
 from aws_lambda_powertools import Logger, Tracer
 
 from models.user import CreateUserRequest, LoginRequest
-from routes import to_json
+from routes import to_json, get_current_user
 from services.user_service import UserService
+
+from typing import cast
+from typings.auth import CurrentUser
 
 logger = Logger()
 tracer = Tracer()
@@ -79,6 +82,13 @@ def login():
 @tracer.capture_method
 def get_user(user_id: str):
     logger.info("Get user request", extra={"user_id": user_id})
+    current_user = get_current_user(router)
+    if not current_user["is_admin"]:
+        return Response(
+            status_code=400,
+            content_type="application/json",
+            body=to_json({"message": "You are not authorised to get users."}),
+        )
 
     try:
         user = user_service.get_user(user_id)
@@ -100,6 +110,14 @@ def get_user(user_id: str):
 @tracer.capture_method
 def delete_user(user_id: str):
     logger.info("Delete user request", extra={"user_id": user_id})
+    logger.info("router", extra={"router": router, "requestContext": router.current_event})
+    current_user = get_current_user(router)
+    if not current_user["is_admin"]:
+        return Response(
+            status_code=400,
+            content_type="application/json",
+            body=to_json({"message": "You are not authorised to delete users."}),
+        )
 
     try:
         user_service.delete_user(user_id)

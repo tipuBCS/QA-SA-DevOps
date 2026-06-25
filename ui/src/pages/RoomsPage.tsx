@@ -170,12 +170,21 @@ export default function RoomsPage() {
     ? Array.from({ length: selectedBuildingData.num_floors }, (_, i) => i + 1)
     : [];
 
-  // Get booking for a specific room and time slot on the selected date
-  const getBookingForSlot = (roomId: string, slotTime: string): BookingData | null => {
+  // Check if a specific 15-minute quarter is booked
+  const isQuarterBooked = (roomId: string, slotTime: string, quarter: number): BookingData | null => {
+    // quarter: 0 = :00, 1 = :15, 2 = :30, 3 = :45
+    const [h] = slotTime.split(':').map(Number);
+    const quarterMinutes = quarter * 15;
+    const quarterTime = `${h.toString().padStart(2, '0')}:${quarterMinutes.toString().padStart(2, '0')}`;
+    const quarterEndMinutes = quarterMinutes + 15;
+    const quarterEnd = quarterEndMinutes >= 60
+      ? `${(h + 1).toString().padStart(2, '0')}:00`
+      : `${h.toString().padStart(2, '0')}:${quarterEndMinutes.toString().padStart(2, '0')}`;
+
     return bookings.find((b) => {
       if (b.room_id !== roomId || b.date !== selectedDate) return false;
-      // Check if this booking overlaps with the slot
-      return b.start_time <= slotTime && b.end_time > slotTime;
+      // Booking overlaps this quarter if it starts before quarter ends AND ends after quarter starts
+      return b.start_time < quarterEnd && b.end_time > quarterTime;
     }) || null;
   };
 
@@ -186,13 +195,14 @@ export default function RoomsPage() {
 
   const handleSlotClick = (room: RoomData, slotTime: string) => {
     if (!canBook(room)) return;
-    const booking = getBookingForSlot(room.room_id, slotTime);
-    if (booking) return; // Slot is taken
 
     setSelectedRoom(room);
     // Default end time is 1 hour after start
-    const startHour = parseInt(slotTime.split(':')[0]);
-    const endTime = `${(startHour + 1).toString().padStart(2, '0')}:00`;
+    const [h, m] = slotTime.split(':').map(Number);
+    const endMinutes = h * 60 + m + 60;
+    const endH = Math.floor(endMinutes / 60);
+    const endM = endMinutes % 60;
+    const endTime = `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
     setBookingForm({ start_time: slotTime, end_time: endTime, purpose: '' });
     setBookingError('');
     setBookingDialog(true);
@@ -358,50 +368,106 @@ export default function RoomsPage() {
 
                 {/* Time slot cells */}
                 {TIME_SLOTS.map((slot) => {
-                  const booking = getBookingForSlot(room.room_id, slot);
-                  const isBooked = !!booking;
                   const isAccessible = canBook(room);
 
+                  // Determine state of each quarter
+                  const quarters = [0, 1, 2, 3].map((q) => ({
+                    quarter: q,
+                    booking: isQuarterBooked(room.room_id, slot, q),
+                  }));
+
+                  const allFree = quarters.every((q) => !q.booking);
+                  const allSameBooking = quarters.every((q) => q.booking && quarters[0].booking && q.booking.booking_id === quarters[0].booking.booking_id);
+                  const firstBooking = quarters.find((q) => q.booking)?.booking;
+
+                  // Determine label
+                  let label = '';
+                  let labelColor = 'text.secondary';
+                  if (allFree && isAccessible) {
+                    label = 'Available';
+                  } else if (allFree && !isAccessible) {
+                    label = '🔒';
+                  } else if (allSameBooking && firstBooking) {
+                    label = firstBooking.user_id === user?.user_id ? 'You' : 'Booked';
+                    labelColor = '#c62828';
+                  } else if (!allFree && !allSameBooking) {
+                    label = 'Partially\nBooked';
+                    labelColor = '#c62828';
+                  }
+
+                  // For click, use the first free quarter's time
+                  const firstFreeQuarter = quarters.find((q) => !q.booking);
+                  const clickTime = firstFreeQuarter
+                    ? `${slot.split(':')[0].padStart(2, '0')}:${(firstFreeQuarter.quarter * 15).toString().padStart(2, '0')}`
+                    : slot;
+
+                  const tooltipTitle = allFree
+                    ? (isAccessible ? 'Click to book' : `Requires ${room.min_access_level_name} access`)
+                    : allSameBooking && firstBooking
+                      ? `Booked: ${firstBooking.purpose || 'No purpose'} (${firstBooking.start_time} – ${firstBooking.end_time})`
+                      : 'Partially booked — click an available slot';
+
                   return (
-                    <Tooltip
-                      key={`${room.room_id}-${slot}`}
-                      title={
-                        isBooked
-                          ? `Booked: ${booking.purpose || 'No purpose'} (${booking.start_time} - ${booking.end_time})`
-                          : !isAccessible
-                            ? `Requires ${room.min_access_level_name} access`
-                            : 'Click to book'
-                      }
-                    >
+                    <Tooltip key={`${room.room_id}-${slot}`} title={tooltipTitle}>
                       <Box
                         sx={{
-                          p: 0.5,
                           borderBottom: 1,
                           borderLeft: 1,
                           borderColor: 'divider',
-                          cursor: !isBooked && isAccessible ? 'pointer' : 'default',
-                          backgroundColor: isBooked
-                            ? '#ffcdd2'
-                            : !isAccessible
-                              ? '#f5f5f5'
-                              : 'transparent',
-                          '&:hover': !isBooked && isAccessible ? { backgroundColor: '#e3f2fd' } : {},
                           display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
                           minHeight: 48,
+                          position: 'relative',
+                          cursor: !allFree || !isAccessible ? (firstFreeQuarter && isAccessible ? 'pointer' : 'default') : 'pointer',
                         }}
-                        onClick={() => handleSlotClick(room, slot)}
+                        onClick={() => {
+                          if (isAccessible && firstFreeQuarter) {
+                            handleSlotClick(room, clickTime);
+                          }
+                        }}
                       >
-                        {isBooked ? (
-                          <Typography variant="caption" sx={{ color: '#c62828', fontWeight: 500 }}>
-                            {booking.user_id === user?.user_id ? 'You' : 'Booked'}
+                        {/* Quarter segments for coloring */}
+                        {quarters.map(({ quarter, booking: qBooking }) => (
+                          <Box
+                            key={quarter}
+                            sx={{
+                              flex: 1,
+                              backgroundColor: qBooking
+                                ? '#ffcdd2'
+                                : !isAccessible
+                                  ? '#f5f5f5'
+                                  : 'transparent',
+                              borderRight: quarter < 3 ? '1px dashed #e0e0e0' : 'none',
+                            }}
+                          />
+                        ))}
+
+                        {/* Centered label */}
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            pointerEvents: 'none',
+                          }}
+                        >
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: labelColor,
+                              fontWeight: label === 'Available' ? 400 : 500,
+                              fontSize: '0.65rem',
+                              textAlign: 'center',
+                              whiteSpace: 'pre-line',
+                            }}
+                          >
+                            {label}
                           </Typography>
-                        ) : (
-                          <Typography variant="caption" color="text.secondary">
-                            {isAccessible ? 'Available' : '🔒'}
-                          </Typography>
-                        )}
+                        </Box>
                       </Box>
                     </Tooltip>
                   );

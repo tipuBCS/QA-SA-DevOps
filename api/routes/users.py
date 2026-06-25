@@ -134,3 +134,59 @@ def delete_user(user_id: str):
         content_type="application/json",
         body=to_json({"message": "User deleted successfully"}),
     )
+
+
+@router.get("/")
+@tracer.capture_method
+def list_users():
+    current_user = get_current_user(router)
+    if not current_user["is_admin"]:
+        return Response(
+            status_code=403,
+            content_type="application/json",
+            body=to_json({"error": "Admin access required"}),
+        )
+
+    users = user_service.list_all_users()
+    return Response(
+        status_code=200,
+        content_type="application/json",
+        body=to_json({"users": users}),
+    )
+
+
+@router.patch("/<user_id>")
+@tracer.capture_method
+def update_user(user_id: str):
+    current_user = get_current_user(router)
+    if not current_user["is_admin"]:
+        return Response(
+            status_code=403,
+            content_type="application/json",
+            body=to_json({"error": "Admin access required"}),
+        )
+
+    body = router.current_event.json_body
+
+    access_level = body.get("access_level")
+    if access_level is None:
+        return Response(
+            status_code=400,
+            content_type="application/json",
+            body=to_json({"error": "access_level is required"}),
+        )
+
+    try:
+        user = user_service.update_user_access_level(user_id, int(access_level))
+    except ValueError as e:
+        return Response(
+            status_code=400,
+            content_type="application/json",
+            body=to_json({"error": str(e)}),
+        )
+
+    return Response(
+        status_code=200,
+        content_type="application/json",
+        body=to_json({"message": "User updated successfully", "user": user}),
+    )

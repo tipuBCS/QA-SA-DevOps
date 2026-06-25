@@ -176,3 +176,55 @@ class UserService:
             raise ValueError("User not found")
 
         self.table.delete_item(Key={"PK": f"USER#{user_id}", "SK": f"USER#{user_id}"})
+
+    def list_all_users(self) -> list[User]:
+        """List all users. Uses a scan filtered by entity_type (admin only)."""
+        from typing import List
+
+        result = self.table.scan(
+            FilterExpression="entity_type = :et",
+            ExpressionAttributeValues={":et": "USER"},
+        )
+
+        users: List[User] = []
+        for item in result.get("Items", []):
+            item = cast(UserItem, item)
+            users.append({
+                "user_id": item["user_id"],
+                "email": item["email"],
+                "name": item["name"],
+                "is_admin": item["is_admin"],
+                "access_level": int(item["access_level"]),
+                "access_level_name": AccessLevel.name_for(int(item["access_level"])),
+            })
+
+        return users
+
+    def update_user_access_level(self, user_id: str, access_level: int) -> User:
+        """Update a user's access level. Raises ValueError if user not found or level invalid."""
+        if not AccessLevel.is_valid(access_level):
+            raise ValueError("Invalid access level")
+
+        result = self.table.get_item(
+            Key={"PK": f"USER#{user_id}", "SK": f"USER#{user_id}"}
+        )
+
+        item = result.get("Item")
+        if not item:
+            raise ValueError("User not found")
+
+        self.table.update_item(
+            Key={"PK": f"USER#{user_id}", "SK": f"USER#{user_id}"},
+            UpdateExpression="SET access_level = :al",
+            ExpressionAttributeValues={":al": access_level},
+        )
+
+        item = cast(UserItem, item)
+        return {
+            "user_id": item["user_id"],
+            "email": item["email"],
+            "name": item["name"],
+            "is_admin": item["is_admin"],
+            "access_level": access_level,
+            "access_level_name": AccessLevel.name_for(access_level),
+        }

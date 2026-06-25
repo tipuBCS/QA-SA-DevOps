@@ -29,6 +29,14 @@ export class ApiStack extends Stack {
       projectionType: ProjectionType.ALL,
     });
 
+    // GSI2 for building+date booking lookups
+    table.addGlobalSecondaryIndex({
+      indexName: 'GSI2',
+      partitionKey: { name: 'GSI2PK', type: AttributeType.STRING },
+      sortKey: { name: 'GSI2SK', type: AttributeType.STRING },
+      projectionType: ProjectionType.ALL,
+    });
+
     // AWS Lambda Powertools layer
     const powertoolsLayer = LayerVersion.fromLayerVersionArn(
       this, `PowertoolsLayer-${stage}`,

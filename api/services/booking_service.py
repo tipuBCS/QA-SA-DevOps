@@ -44,9 +44,12 @@ class BookingService:
             "SK": f"BOOKING#{booking_id}",
             "GSI1PK": f"USER#{request.user_id}",
             "GSI1SK": f"BOOKING#{request.date}#{request.start_time}",
+            "GSI2PK": f"BUILDING#{request.building_id}",
+            "GSI2SK": f"DATE#{request.date}#ROOM#{request.room_id}#{request.start_time}",
             "booking_id": booking_id,
             "room_id": request.room_id,
             "room_name": room["name"],
+            "building_id": request.building_id,
             "building_name": room["building_name"],
             "floor": room["floor"],
             "user_id": request.user_id,
@@ -63,6 +66,7 @@ class BookingService:
             "booking_id": booking_id,
             "room_id": request.room_id,
             "room_name": room["name"],
+            "building_id": request.building_id,
             "building_name": room["building_name"],
             "floor": room["floor"],
             "user_id": request.user_id,
@@ -87,6 +91,7 @@ class BookingService:
             "booking_id": item["booking_id"],
             "room_id": item["room_id"],
             "room_name": item["room_name"],
+            "building_id": item.get("building_id", ""),
             "building_name": item["building_name"],
             "floor": int(item["floor"]),
             "user_id": item["user_id"],
@@ -111,6 +116,7 @@ class BookingService:
                 "booking_id": item["booking_id"],
                 "room_id": item["room_id"],
                 "room_name": item["room_name"],
+                "building_id": item.get("building_id", ""),
                 "building_name": item["building_name"],
                 "floor": int(item["floor"]),
                 "user_id": item["user_id"],
@@ -134,3 +140,31 @@ class BookingService:
         self.table.delete_item(
             Key={"PK": f"BOOKING#{booking_id}", "SK": f"BOOKING#{booking_id}"}
         )
+
+    def list_building_bookings(self, building_id: str, date: str) -> List[Booking]:
+        """List all bookings for a building on a specific date."""
+        result = self.table.query(
+            IndexName="GSI2",
+            KeyConditionExpression=Key("GSI2PK").eq(f"BUILDING#{building_id}")
+            & Key("GSI2SK").begins_with(f"DATE#{date}#"),
+        )
+
+        booking_list: List[Booking] = []
+        for item in result.get("Items", []):
+            item = cast(BookingItem, item)
+            booking: Booking = {
+                "booking_id": item["booking_id"],
+                "room_id": item["room_id"],
+                "room_name": item["room_name"],
+                "building_id": item.get("building_id", ""),
+                "building_name": item["building_name"],
+                "floor": int(item["floor"]),
+                "user_id": item["user_id"],
+                "date": item["date"],
+                "start_time": item["start_time"],
+                "end_time": item["end_time"],
+                "purpose": item["purpose"],
+            }
+            booking_list.append(booking)
+
+        return booking_list

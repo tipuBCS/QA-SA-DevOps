@@ -9,9 +9,12 @@ class BookingItem(TypedDict):
     SK: str
     GSI1PK: str
     GSI1SK: str
+    GSI2PK: str
+    GSI2SK: str
     booking_id: str
     room_id: str
     room_name: str
+    building_id: str
     building_name: str
     floor: int
     user_id: str
@@ -27,6 +30,7 @@ class Booking(TypedDict):
     booking_id: str
     room_id: str
     room_name: str
+    building_id: str
     building_name: str
     floor: int
     user_id: str

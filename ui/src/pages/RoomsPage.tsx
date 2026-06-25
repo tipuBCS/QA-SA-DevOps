@@ -89,7 +89,6 @@ export default function RoomsPage() {
   // Booking dialog state
   const [bookingDialog, setBookingDialog] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState<RoomData | null>(null);
-  const [selectedSlotTime, setSelectedSlotTime] = useState('');
   const [bookingForm, setBookingForm] = useState({
     start_time: '',
     end_time: '',
@@ -137,9 +136,9 @@ export default function RoomsPage() {
   // TODO: Replace with a proper API endpoint that fetches all bookings for a building/date
   // Currently fetches only the current user's bookings since there's no room-level booking query
   const fetchBookings = async () => {
-    if (!user) return;
+    if (!selectedBuilding) return;
     try {
-      const res = await apiRequest(`/bookings/user/${user.user_id}`);
+      const res = await apiRequest(`/buildings/${selectedBuilding}/bookings?date=${selectedDate}`);
       if (res.ok) {
         const data = await res.json();
         setBookings(data.bookings || []);
@@ -191,7 +190,6 @@ export default function RoomsPage() {
     if (booking) return; // Slot is taken
 
     setSelectedRoom(room);
-    setSelectedSlotTime(slotTime);
     // Default end time is 1 hour after start
     const startHour = parseInt(slotTime.split(':')[0]);
     const endTime = `${(startHour + 1).toString().padStart(2, '0')}:00`;

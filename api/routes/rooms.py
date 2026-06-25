@@ -155,3 +155,23 @@ def book_room(building_id: str, room_id: str):
         content_type="application/json",
         body=to_json({"message": "Room booked successfully", "booking": booking}),
     )
+
+
+@router.get("/<building_id>/bookings")
+@tracer.capture_method
+def list_building_bookings(building_id: str):
+    date = router.current_event.get_query_string_value("date")
+
+    if not date:
+        return Response(
+            status_code=400,
+            content_type="application/json",
+            body=to_json({"error": "date query parameter is required"}),
+        )
+
+    bookings = booking_service.list_building_bookings(building_id, date)
+    return Response(
+        status_code=200,
+        content_type="application/json",
+        body=to_json({"bookings": bookings}),
+    )

@@ -8,13 +8,13 @@ class TestCreateRoomType:
     def test_create_room_type_as_admin(self, api_url, admin_headers, cleanup_room_type):
         response = requests.post(
             f"{api_url}/room-types/",
-            json={"name": "Huddle Space", "description": "Small informal area"},
+            json={"name": "Test Huddle Space", "description": "Small informal area"},
             headers=admin_headers,
         )
 
         assert response.status_code == 201
         body = response.json()
-        assert body["room_type"]["name"] == "Huddle Space"
+        assert body["room_type"]["name"] == "Test Huddle Space"
         assert body["room_type"]["description"] == "Small informal area"
         cleanup_room_type(body["room_type"]["room_type_id"])
 
@@ -38,14 +38,14 @@ class TestCreateRoomType:
     def test_create_duplicate_room_type(self, api_url, admin_headers, cleanup_room_type):
         resp = requests.post(
             f"{api_url}/room-types/",
-            json={"name": "Conference Room"},
+            json={"name": "Test Conference Room"},
             headers=admin_headers,
         )
         cleanup_room_type(resp.json()["room_type"]["room_type_id"])
 
         response = requests.post(
             f"{api_url}/room-types/",
-            json={"name": "Conference Room"},
+            json={"name": "Test Conference Room"},
             headers=admin_headers,
         )
 
@@ -55,16 +55,16 @@ class TestCreateRoomType:
 
 class TestListRoomTypes:
     def test_list_room_types(self, api_url, admin_headers, create_room_type):
-        create_room_type("Training Room")
-        create_room_type("Phone Booth")
+        create_room_type("Test Training Room")
+        create_room_type("Test Phone Booth")
 
         response = requests.get(f"{api_url}/room-types/", headers=admin_headers)
 
         assert response.status_code == 200
         room_types = response.json()["room_types"]
         names = [rt["name"] for rt in room_types]
-        assert "Training Room" in names
-        assert "Phone Booth" in names
+        assert "Test Training Room" in names
+        assert "Test Phone Booth" in names
 
 
 class TestDeleteRoomType:

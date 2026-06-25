@@ -12,6 +12,7 @@ from typings.room import Room
 from models.booking import BookRoomRequest
 from models.user import AccessLevel
 from services.room_service import RoomService
+from datetime import datetime, date as date_type
 
 
 class BookingService:
@@ -30,6 +31,17 @@ class BookingService:
 
     def book_room(self, request: BookRoomRequest, user_access_level: int) -> Booking:
         """Book a room. Checks user access level against room requirements."""
+        # Prevent booking in the past
+
+        booking_date = datetime.strptime(request.date, "%Y-%m-%d").date()
+        today = date_type.today()
+        if booking_date < today:
+            raise ValueError("Cannot book a room in the past")
+        if booking_date == today:
+            now_time = datetime.now().strftime("%H:%M")
+            if request.end_time <= now_time:
+                raise ValueError("Cannot book a room in the past")
+
         room: Room = self.room_service.get_room(request.building_id, request.room_id)
 
         if user_access_level < room["min_access_level"]:

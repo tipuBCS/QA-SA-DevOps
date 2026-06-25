@@ -411,12 +411,23 @@ export default function RoomsPage() {
                   const allSameBooking = quarters.every((q) => q.booking && quarters[0].booking && q.booking.booking_id === quarters[0].booking.booking_id);
                   const firstBooking = quarters.find((q) => q.booking)?.booking;
 
+                  // Check if this slot is in the past
+                  const now = new Date();
+                  const todayStr = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
+                  const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+                  const [slotH] = slot.split(':').map(Number);
+                  const slotEndTime = `${(slotH + 1).toString().padStart(2, '0')}:00`;
+                  const isPast = selectedDate < todayStr || (selectedDate === todayStr && slotEndTime <= currentTime);
+                  const canInteract = isAccessible && !isPast;
+
                   // Determine label
                   let label = '';
                   let labelColor = 'text.secondary';
-                  if (allFree && isAccessible) {
+                  if (isPast && allFree) {
+                    label = 'Past';
+                  } else if (allFree && canInteract) {
                     label = 'Available';
-                  } else if (allFree && !isAccessible) {
+                  } else if (allFree && !canInteract) {
                     label = '🔒';
                   } else if (allSameBooking && firstBooking) {
                     label = firstBooking.user_id === user?.user_id ? 'You' : 'Booked';
@@ -432,11 +443,13 @@ export default function RoomsPage() {
                     ? `${slot.split(':')[0].padStart(2, '0')}:${(firstFreeQuarter.quarter * 15).toString().padStart(2, '0')}`
                     : slot;
 
-                  const tooltipTitle = allFree
-                    ? (isAccessible ? 'Click to book' : `Requires ${room.min_access_level_name} access`)
-                    : allSameBooking && firstBooking
-                      ? `Booked: ${firstBooking.purpose || 'No purpose'} (${firstBooking.start_time} – ${firstBooking.end_time})`
-                      : 'Partially booked — click an available slot';
+                  const tooltipTitle = isPast
+                    ? 'This time slot is in the past'
+                    : allFree
+                      ? (canInteract ? 'Click to book' : `Requires ${room.min_access_level_name} access`)
+                      : allSameBooking && firstBooking
+                        ? `Booked: ${firstBooking.purpose || 'No purpose'} (${firstBooking.start_time} – ${firstBooking.end_time})`
+                        : 'Partially booked — click an available slot';
 
                   return (
                     <Tooltip key={`${room.room_id}-${slot}`} title={tooltipTitle}>
@@ -448,10 +461,12 @@ export default function RoomsPage() {
                           display: 'flex',
                           minHeight: 48,
                           position: 'relative',
-                          cursor: !allFree || !isAccessible ? (firstFreeQuarter && isAccessible ? 'pointer' : 'default') : 'pointer',
+                          cursor: canInteract && firstFreeQuarter ? 'pointer' : 'default',
+                          opacity: isPast ? 0.4 : 1,
+                          background: isPast ? 'repeating-linear-gradient(45deg, #f5f5f5, #f5f5f5 4px, #e0e0e0 4px, #e0e0e0 5px)' : undefined,
                         }}
                         onClick={() => {
-                          if (isAccessible && firstFreeQuarter) {
+                          if (canInteract && firstFreeQuarter) {
                             handleSlotClick(room, clickTime);
                           }
                         }}

@@ -85,7 +85,7 @@ export default function RoomsPage() {
   const [buildings, setBuildings] = useState<Building[]>([]);
   const [bookings, setBookings] = useState<BookingData[]>([]);
   const [selectedBuilding, setSelectedBuilding] = useState('');
-  const [selectedFloor, setSelectedFloor] = useState('');
+  const [selectedFloor, setSelectedFloor] = useState('all');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -166,7 +166,7 @@ export default function RoomsPage() {
   }, [selectedBuilding, selectedDate]);
 
   // Filter rooms by floor
-  const filteredRooms = selectedFloor
+  const filteredRooms = selectedFloor !== 'all'
     ? rooms.filter((r) => r.floor === parseInt(selectedFloor))
     : rooms;
 
@@ -297,7 +297,7 @@ export default function RoomsPage() {
           select
           label="Building"
           value={selectedBuilding}
-          onChange={(e) => { setSelectedBuilding(e.target.value); setSelectedFloor(''); }}
+          onChange={(e) => { setSelectedBuilding(e.target.value); setSelectedFloor('all'); }}
           sx={{ minWidth: 200 }}
           size="small"
         >
@@ -313,7 +313,7 @@ export default function RoomsPage() {
           sx={{ minWidth: 100 }}
           size="small"
         >
-          <MenuItem value="">All</MenuItem>
+          <MenuItem value="all">All</MenuItem>
           {floors.map((f) => (
             <MenuItem key={f} value={f.toString()}>{f}</MenuItem>
           ))}

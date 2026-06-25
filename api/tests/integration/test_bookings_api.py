@@ -3,6 +3,9 @@ import requests
 
 pytestmark = pytest.mark.integration
 
+# Always use a future date for booking tests
+FUTURE_DATE = "2027-01-15"
+
 
 class TestBookRoom:
     def test_book_room_with_sufficient_access(
@@ -14,7 +17,7 @@ class TestBookRoom:
         response = requests.post(
             f"{api_url}/buildings/{building_id}/rooms/{room_id}/book",
             json={
-                "date": "2026-06-15",
+                "date": FUTURE_DATE,
                 "start_time": "09:00",
                 "end_time": "10:00",
                 "purpose": "Standup",
@@ -25,7 +28,7 @@ class TestBookRoom:
         assert response.status_code == 201
         body = response.json()
         assert body["booking"]["room_name"] == "Huddle"
-        assert body["booking"]["date"] == "2026-06-15"
+        assert body["booking"]["date"] == FUTURE_DATE
         cleanup_booking(body["booking"]["booking_id"])
 
     def test_book_room_rejected_insufficient_access(
@@ -37,7 +40,7 @@ class TestBookRoom:
         response = requests.post(
             f"{api_url}/buildings/{building_id}/rooms/{room_id}/book",
             json={
-                "date": "2026-06-15",
+                "date": FUTURE_DATE,
                 "start_time": "10:00",
                 "end_time": "11:00",
                 "purpose": "Meeting",
@@ -57,7 +60,7 @@ class TestBookRoom:
         response = requests.post(
             f"{api_url}/buildings/{building_id}/rooms/{room_id}/book",
             json={
-                "date": "2026-06-15",
+                "date": FUTURE_DATE,
                 "start_time": "14:00",
                 "end_time": "15:00",
                 "purpose": "Test",

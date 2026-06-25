@@ -1,4 +1,5 @@
 import pytest
+from datetime import date, timedelta
 
 from services.building_service import BuildingService
 from services.room_service import RoomService
@@ -9,6 +10,9 @@ from models.booking import BookRoomRequest
 from models.user import AccessLevel
 
 pytestmark = pytest.mark.unit
+
+# Always use a future date for booking tests
+FUTURE_DATE = (date.today() + timedelta(days=7)).isoformat()
 
 class TestBookRoom:
     def test_books_room_with_sufficient_access(self, dynamodb_table):
@@ -34,7 +38,7 @@ class TestBookRoom:
                 room_id=room["room_id"],
                 building_id=building["building_id"],
                 user_id="user-123",
-                date="2026-06-01",
+                date=FUTURE_DATE,
                 start_time="09:00",
                 end_time="10:00",
                 purpose="Standup",
@@ -43,7 +47,7 @@ class TestBookRoom:
         )
 
         assert booking["room_name"] == "Huddle"
-        assert booking["date"] == "2026-06-01"
+        assert booking["date"] == FUTURE_DATE
         assert "booking_id" in booking
 
     def test_rejects_booking_with_insufficient_access(self, dynamodb_table):
@@ -72,7 +76,7 @@ class TestBookRoom:
                     room_id=room["room_id"],
                     building_id=building["building_id"],
                     user_id="user-456",
-                    date="2026-06-01",
+                    date=FUTURE_DATE,
                     start_time="10:00",
                     end_time="11:00",
                     purpose="Meeting",
@@ -109,7 +113,7 @@ class TestCancelBooking:
                 room_id=room["room_id"],
                 building_id=building["building_id"],
                 user_id="user-456",
-                date="2026-06-01",
+                date=FUTURE_DATE,
                 start_time="10:00",
                 end_time="11:00",
                 purpose="Meeting",

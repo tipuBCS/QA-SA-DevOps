@@ -260,7 +260,7 @@ def create_booking(api_url, user_headers, cleanup_booking):
     """Helper fixture to create a booking and return the booking_id."""
 
     def _create(building_id: str, room_id: str,
-                date: str = "2026-06-15",
+                date: str = "2027-01-15",
                 start_time: str = "09:00", end_time: str = "10:00",
                 purpose: str = "Test booking"):
         response = requests.post(

@@ -70,6 +70,11 @@ function formatTime(time: string): string {
   return `${displayHour}:${m} ${ampm}`;
 }
 
+function timeToMinutes(time: string): number {
+  const [h, m] = time.split(':').map(Number);
+  return h * 60 + m;
+}
+
 function formatDate(dateStr: string): string {
   const date = new Date(dateStr + 'T00:00:00');
   return date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
@@ -95,6 +100,7 @@ export default function RoomsPage() {
     purpose: '',
   });
   const [bookingError, setBookingError] = useState('');
+  const [availableWindow, setAvailableWindow] = useState<{ start: string; end: string }>({ start: '07:00', end: '20:00' });
 
   const user = getCurrentUser();
 
@@ -196,10 +202,35 @@ export default function RoomsPage() {
   const handleSlotClick = (room: RoomData, slotTime: string) => {
     if (!canBook(room)) return;
 
+    // Find the contiguous free window around the clicked time
+    const roomBookings = bookings
+      .filter((b) => b.room_id === room.room_id && b.date === selectedDate)
+      .sort((a, b) => a.start_time.localeCompare(b.start_time));
+
+    // Find the earliest start (walk backwards until we hit a booking or 07:00)
+    let windowStart = '07:00';
+    for (const b of roomBookings) {
+      if (b.end_time <= slotTime) {
+        // This booking ends before our slot — our window starts after it
+        windowStart = b.end_time;
+      }
+    }
+
+    // Find the latest end (walk forwards until we hit a booking or 20:00)
+    let windowEnd = '20:00';
+    for (const b of roomBookings) {
+      if (b.start_time > slotTime) {
+        // This booking starts after our slot — our window ends at its start
+        windowEnd = b.start_time;
+        break;
+      }
+    }
+
+    setAvailableWindow({ start: windowStart, end: windowEnd });
     setSelectedRoom(room);
-    // Default end time is 1 hour after start
+    // Default end time is 1 hour after start (capped to window end)
     const [h, m] = slotTime.split(':').map(Number);
-    const endMinutes = h * 60 + m + 60;
+    const endMinutes = Math.min(h * 60 + m + 60, timeToMinutes(windowEnd));
     const endH = Math.floor(endMinutes / 60);
     const endM = endMinutes % 60;
     const endTime = `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
@@ -389,7 +420,7 @@ export default function RoomsPage() {
                     label = '🔒';
                   } else if (allSameBooking && firstBooking) {
                     label = firstBooking.user_id === user?.user_id ? 'You' : 'Booked';
-                    labelColor = '#c62828';
+                    labelColor = firstBooking.user_id === user?.user_id ? '#2e7d32' : '#c62828';
                   } else if (!allFree && !allSameBooking) {
                     label = 'Partially\nBooked';
                     labelColor = '#c62828';
@@ -426,20 +457,25 @@ export default function RoomsPage() {
                         }}
                       >
                         {/* Quarter segments for coloring */}
-                        {quarters.map(({ quarter, booking: qBooking }) => (
-                          <Box
-                            key={quarter}
-                            sx={{
-                              flex: 1,
-                              backgroundColor: qBooking
-                                ? '#ffcdd2'
-                                : !isAccessible
-                                  ? '#f5f5f5'
-                                  : 'transparent',
-                              borderRight: quarter < 3 ? '1px dashed #e0e0e0' : 'none',
-                            }}
-                          />
-                        ))}
+                        {quarters.map(({ quarter, booking: qBooking }) => {
+                          const isOurs = qBooking && qBooking.user_id === user?.user_id;
+                          return (
+                            <Box
+                              key={quarter}
+                              sx={{
+                                flex: 1,
+                                backgroundColor: qBooking
+                                  ? isOurs
+                                    ? '#c8e6c9'
+                                    : '#ffcdd2'
+                                  : !isAccessible
+                                    ? '#f5f5f5'
+                                    : 'transparent',
+                                borderRight: quarter < 3 ? '1px dashed #e0e0e0' : 'none',
+                              }}
+                            />
+                          );
+                        })}
 
                         {/* Centered label */}
                         <Box
@@ -510,7 +546,7 @@ export default function RoomsPage() {
               onChange={(e) => setBookingForm({ ...bookingForm, start_time: e.target.value })}
               required
             >
-              {TIME_OPTIONS.map((t) => (
+              {TIME_OPTIONS.filter((t) => t >= availableWindow.start && t < availableWindow.end).map((t) => (
                 <MenuItem key={t} value={t}>{formatTime(t)}</MenuItem>
               ))}
             </TextField>
@@ -521,7 +557,7 @@ export default function RoomsPage() {
               onChange={(e) => setBookingForm({ ...bookingForm, end_time: e.target.value })}
               required
             >
-              {TIME_OPTIONS.filter((t) => t > bookingForm.start_time).map((t) => (
+              {TIME_OPTIONS.filter((t) => t > bookingForm.start_time && t <= availableWindow.end).map((t) => (
                 <MenuItem key={t} value={t}>{formatTime(t)}</MenuItem>
               ))}
             </TextField>

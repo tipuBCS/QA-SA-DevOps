@@ -148,6 +148,16 @@ export default function BookingsPage() {
   };
 
   const today = formatDateKey(new Date());
+  const currentTime = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`;
+
+  const getBookingStatus = (booking: BookingData): { label: string; color: 'primary' | 'success' | 'default' } => {
+    if (booking.date > today) return { label: 'Upcoming', color: 'primary' };
+    if (booking.date < today) return { label: 'Past', color: 'default' };
+    // Same day — check time
+    if (booking.end_time <= currentTime) return { label: 'Past', color: 'default' };
+    if (booking.start_time <= currentTime && booking.end_time > currentTime) return { label: 'Active', color: 'success' };
+    return { label: 'Upcoming', color: 'primary' };
+  };
 
   return (
     <Container sx={{ py: 4 }}>
@@ -217,10 +227,20 @@ export default function BookingsPage() {
                         sx={{
                           p: 0.75,
                           borderRadius: 1,
-                          backgroundColor: 'primary.main',
+                          backgroundColor: getBookingStatus(booking).color === 'success'
+                            ? 'success.main'
+                            : getBookingStatus(booking).color === 'default'
+                              ? 'grey.500'
+                              : 'primary.main',
                           color: 'white',
                           cursor: 'pointer',
-                          '&:hover': { backgroundColor: 'primary.dark' },
+                          '&:hover': {
+                            backgroundColor: getBookingStatus(booking).color === 'success'
+                              ? 'success.dark'
+                              : getBookingStatus(booking).color === 'default'
+                                ? 'grey.700'
+                                : 'primary.dark',
+                          },
                         }}
                       >
                         <Typography variant="caption" sx={{ display: 'block', fontWeight: 'bold' }}>
@@ -276,11 +296,10 @@ export default function BookingsPage() {
               <Box>
                 <Typography variant="caption" color="text.secondary">Status</Typography>
                 <Box sx={{ mt: 0.5 }}>
-                  <Chip
-                    label={selectedBooking.date >= today ? 'Upcoming' : 'Past'}
-                    color={selectedBooking.date >= today ? 'primary' : 'default'}
-                    size="small"
-                  />
+                  {(() => {
+                    const status = getBookingStatus(selectedBooking);
+                    return <Chip label={status.label} color={status.color} size="small" />;
+                  })()}
                 </Box>
               </Box>
             </Box>

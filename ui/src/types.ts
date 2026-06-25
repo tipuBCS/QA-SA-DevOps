@@ -18,14 +18,14 @@ export interface Room {
 }
 
 export interface Building {
-  id: string;
+  building_id: string;
   name: string;
   address: string;
   num_floors: number;
 }
 
 export interface RoomType {
-  id: string;
+  room_type_id: string;
   name: string;
   description: string;
 }

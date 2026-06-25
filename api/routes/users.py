@@ -63,6 +63,7 @@ def login():
     try:
         result = user_service.login(request)
     except ValueError as e:
+        logger.info("Value Error occurred during login", extra={"result": e})
         return Response(
             status_code=401,
             content_type="application/json",

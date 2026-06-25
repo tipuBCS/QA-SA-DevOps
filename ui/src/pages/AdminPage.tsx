@@ -24,23 +24,25 @@ export default function AdminPage() {
   const [newRoom, setNewRoom] = useState({
     name: '',
     capacity: '',
-    location: '',
+    floor: '',
     amenities: '',
   });
 
   const handleAddRoom = () => {
-    if (!newRoom.name || !newRoom.capacity || !newRoom.location) return;
+    if (!newRoom.name || !newRoom.capacity || !newRoom.floor) return;
 
     const room: Room = {
       id: Date.now().toString(),
       name: newRoom.name,
       capacity: parseInt(newRoom.capacity),
-      location: newRoom.location,
+      floor: parseInt(newRoom.floor),
+      building_id: '',
+      min_access_level: 1,
       amenities: newRoom.amenities.split(',').map((a) => a.trim()).filter(Boolean),
     };
 
     setRooms([...rooms, room]);
-    setNewRoom({ name: '', capacity: '', location: '', amenities: '' });
+    setNewRoom({ name: '', capacity: '', floor: '', amenities: '' });
   };
 
   const handleDeleteRoom = (id: string) => {
@@ -70,9 +72,10 @@ export default function AdminPage() {
             onChange={(e) => setNewRoom({ ...newRoom, capacity: e.target.value })}
           />
           <TextField
-            label="Location"
-            value={newRoom.location}
-            onChange={(e) => setNewRoom({ ...newRoom, location: e.target.value })}
+            label="Floor"
+            type="number"
+            value={newRoom.floor}
+            onChange={(e) => setNewRoom({ ...newRoom, floor: e.target.value })}
           />
           <TextField
             label="Amenities (comma-separated)"
@@ -95,7 +98,7 @@ export default function AdminPage() {
             <TableRow>
               <TableCell>Name</TableCell>
               <TableCell>Capacity</TableCell>
-              <TableCell>Location</TableCell>
+              <TableCell>Floor</TableCell>
               <TableCell>Amenities</TableCell>
               <TableCell>Actions</TableCell>
             </TableRow>
@@ -105,7 +108,7 @@ export default function AdminPage() {
               <TableRow key={room.id}>
                 <TableCell>{room.name}</TableCell>
                 <TableCell>{room.capacity}</TableCell>
-                <TableCell>{room.location}</TableCell>
+                <TableCell>{room.floor}</TableCell>
                 <TableCell>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                     {room.amenities.map((a) => (

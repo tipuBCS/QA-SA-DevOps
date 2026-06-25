@@ -13,16 +13,18 @@ import {
 } from '@mui/material';
 import { MeetingRoom, AccountCircle, Person, Logout } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { getCurrentUser } from '../types';
 
 export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
-  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  const user = getCurrentUser();
   const isActive = (path: string) => location.pathname === path;
 
   const handleSignOut = () => {
+    localStorage.removeItem('token');
     localStorage.removeItem('user');
     setAnchorEl(null);
     navigate('/login');
@@ -50,13 +52,15 @@ export default function Navbar() {
           >
             My Bookings
           </Button>
-          <Button
-            color="inherit"
-            onClick={() => navigate('/admin')}
-            variant={isActive('/admin') ? 'outlined' : 'text'}
-          >
-            Admin
-          </Button>
+          {user?.is_admin && (
+            <Button
+              color="inherit"
+              onClick={() => navigate('/admin')}
+              variant={isActive('/admin') ? 'outlined' : 'text'}
+            >
+              Admin
+            </Button>
+          )}
 
           {user && (
             <>

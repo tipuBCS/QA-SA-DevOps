@@ -48,9 +48,9 @@ export default function BookingsPage() {
             <TableBody>
               {bookings.map((booking) => (
                 <TableRow key={booking.id}>
-                  <TableCell>{booking.roomName}</TableCell>
+                  <TableCell>{booking.room_id}</TableCell>
                   <TableCell>{booking.date}</TableCell>
-                  <TableCell>{booking.startTime} - {booking.endTime}</TableCell>
+                  <TableCell>{booking.start_time} - {booking.end_time}</TableCell>
                   <TableCell>{booking.purpose}</TableCell>
                   <TableCell>
                     <Chip

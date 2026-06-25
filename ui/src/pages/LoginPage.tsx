@@ -17,6 +17,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const [tab, setTab] = useState(0);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [signupForm, setSignupForm] = useState({ email: '', password: '', name: '' });
 
@@ -47,6 +48,7 @@ export default function LoginPage() {
       }
 
       const data = await response.json();
+      localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       navigate('/');
     } catch {
@@ -94,11 +96,13 @@ export default function LoginPage() {
         return;
       }
 
-      const data = await response.json();
-      localStorage.setItem('user', JSON.stringify(data.user));
-      navigate('/');
-    } catch (e) {
-        console.log(e);
+      // Signup successful — switch to login tab so user can sign in
+      setSignupForm({ email: '', password: '', name: '' });
+      setTab(0);
+      setLoginForm({ email: signupForm.email, password: '' });
+      setError('');
+      setSuccess('Account created successfully. Please log in.');
+    } catch {
       setError('Unable to connect to server');
     }
   };
@@ -110,7 +114,7 @@ export default function LoginPage() {
           Room Booker
         </Typography>
 
-        <Tabs value={tab} onChange={(_, v) => {setTab(v), setError('')}} centered sx={{ mb: 3 }}>
+        <Tabs value={tab} onChange={(_, v) => {setTab(v); setError(''); setSuccess('');}} centered sx={{ mb: 3 }}>
           <Tab label="Login" />
           <Tab label="Sign Up" />
         </Tabs>
@@ -118,6 +122,12 @@ export default function LoginPage() {
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}
+          </Alert>
+        )}
+
+        {success && (
+          <Alert severity="success" sx={{ mb: 2 }}>
+            {success}
           </Alert>
         )}
 

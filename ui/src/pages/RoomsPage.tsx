@@ -64,7 +64,7 @@ export default function RoomsPage() {
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                   <LocationOn sx={{ mr: 0.5, fontSize: 20 }} />
                   <Typography variant="body2" color="text.secondary">
-                    {room.location}
+                    Floor {room.floor}
                   </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>

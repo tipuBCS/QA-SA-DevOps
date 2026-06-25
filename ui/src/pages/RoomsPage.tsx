@@ -18,7 +18,7 @@ import {
 import { ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { apiRequest } from '../api';
 import { getCurrentUser } from '../types';
-import type { Building } from '../types';
+import type { Building, RoomType } from '../types';
 
 interface RoomData {
   room_id: string;
@@ -83,9 +83,11 @@ function formatDate(dateStr: string): string {
 export default function RoomsPage() {
   const [rooms, setRooms] = useState<RoomData[]>([]);
   const [buildings, setBuildings] = useState<Building[]>([]);
+  const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
   const [bookings, setBookings] = useState<BookingData[]>([]);
   const [selectedBuilding, setSelectedBuilding] = useState('');
   const [selectedFloor, setSelectedFloor] = useState('all');
+  const [selectedRoomType, setSelectedRoomType] = useState('all');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -118,6 +120,18 @@ export default function RoomsPage() {
       }
     } catch {
       setError('Failed to load buildings');
+    }
+  };
+
+  const fetchRoomTypes = async () => {
+    try {
+      const res = await apiRequest('/room-types/');
+      if (res.ok) {
+        const data = await res.json();
+        setRoomTypes(data.room_types || []);
+      }
+    } catch {
+      // Non-critical
     }
   };
 
@@ -156,6 +170,7 @@ export default function RoomsPage() {
 
   useEffect(() => {
     fetchBuildings();
+    fetchRoomTypes();
   }, []);
 
   useEffect(() => {
@@ -165,10 +180,12 @@ export default function RoomsPage() {
     }
   }, [selectedBuilding, selectedDate]);
 
-  // Filter rooms by floor
-  const filteredRooms = selectedFloor !== 'all'
-    ? rooms.filter((r) => r.floor === parseInt(selectedFloor))
-    : rooms;
+  // Filter rooms by floor and room type
+  const filteredRooms = rooms.filter((r) => {
+    if (selectedFloor !== 'all' && r.floor !== parseInt(selectedFloor)) return false;
+    if (selectedRoomType !== 'all' && r.room_type_id !== selectedRoomType) return false;
+    return true;
+  });
 
   // Get available floors for selected building
   const selectedBuildingData = buildings.find((b) => b.building_id === selectedBuilding);
@@ -316,6 +333,19 @@ export default function RoomsPage() {
           <MenuItem value="all">All</MenuItem>
           {floors.map((f) => (
             <MenuItem key={f} value={f.toString()}>{f}</MenuItem>
+          ))}
+        </TextField>
+        <TextField
+          select
+          label="Room Type"
+          value={selectedRoomType}
+          onChange={(e) => setSelectedRoomType(e.target.value)}
+          sx={{ minWidth: 150 }}
+          size="small"
+        >
+          <MenuItem value="all">All</MenuItem>
+          {roomTypes.map((rt) => (
+            <MenuItem key={rt.room_type_id} value={rt.room_type_id}>{rt.name}</MenuItem>
           ))}
         </TextField>
         <TextField

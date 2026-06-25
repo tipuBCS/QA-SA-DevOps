@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
   Typography,
-  Box,
   Paper,
   Table,
   TableBody,

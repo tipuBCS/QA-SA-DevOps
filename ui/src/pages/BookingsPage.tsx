@@ -199,8 +199,7 @@ export default function BookingsPage() {
               >
                 <Typography
                   variant="caption"
-                  fontWeight="bold"
-                  sx={{ display: 'block', mb: 1, color: isToday ? 'primary.main' : 'text.secondary' }}
+                  sx={{ display: 'block', mb: 1, fontWeight: 'bold', color: isToday ? 'primary.main' : 'text.secondary' }}
                 >
                   {formatDayLabel(date)}
                 </Typography>
@@ -224,7 +223,7 @@ export default function BookingsPage() {
                           '&:hover': { backgroundColor: 'primary.dark' },
                         }}
                       >
-                        <Typography variant="caption" fontWeight="bold" sx={{ display: 'block' }}>
+                        <Typography variant="caption" sx={{ display: 'block', fontWeight: 'bold' }}>
                           {formatTime(booking.start_time)} – {formatTime(booking.end_time)}
                         </Typography>
                         <Typography variant="caption" sx={{ display: 'block', opacity: 0.9 }}>
@@ -254,7 +253,7 @@ export default function BookingsPage() {
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: 1 }}>
               <Box>
                 <Typography variant="caption" color="text.secondary">Room</Typography>
-                <Typography variant="body1" fontWeight="bold">{selectedBooking.room_name}</Typography>
+                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>{selectedBooking.room_name}</Typography>
               </Box>
               <Box>
                 <Typography variant="caption" color="text.secondary">Location</Typography>

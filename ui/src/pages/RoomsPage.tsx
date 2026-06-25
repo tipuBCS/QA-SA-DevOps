@@ -348,7 +348,7 @@ export default function RoomsPage() {
                     justifyContent: 'center',
                   }}
                 >
-                  <Typography variant="body2" fontWeight="bold">
+                  <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
                     {room.name}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
@@ -418,7 +418,7 @@ export default function RoomsPage() {
         <DialogContent>
           {selectedRoom && (
             <Box sx={{ mb: 2, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
-              <Typography variant="subtitle1" fontWeight="bold">
+              <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
                 {selectedRoom.building_name} — Floor {selectedRoom.floor}
               </Typography>
               <Typography variant="body2" color="text.secondary">

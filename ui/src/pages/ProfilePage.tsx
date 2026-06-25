@@ -1,8 +1,11 @@
-import { Container, Paper, Typography, Box, Avatar } from '@mui/material';
-import { Person } from '@mui/icons-material';
+import { Container, Paper, Typography, Box, Avatar, Chip } from '@mui/material';
+import { Person, AdminPanelSettings } from '@mui/icons-material';
+import { getCurrentUser } from '../types';
 
 export default function ProfilePage() {
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const user = getCurrentUser();
+
+  if (!user) return null;
 
   return (
     <Container maxWidth="sm" sx={{ py: 4 }}>
@@ -12,17 +15,37 @@ export default function ProfilePage() {
             <Person fontSize="large" />
           </Avatar>
           <Typography variant="h5">{user.name}</Typography>
+          {user.is_admin && (
+            <Chip
+              icon={<AdminPanelSettings />}
+              label="Administrator"
+              color="primary"
+              size="small"
+              sx={{ mt: 1 }}
+            />
+          )}
         </Box>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-          <Typography variant="body1">
-            <strong>Name:</strong> {user.name}
-          </Typography>
-          <Typography variant="body1">
-            <strong>Email:</strong> {user.email}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            <strong>User ID:</strong> {user.user_id}
-          </Typography>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box>
+            <Typography variant="caption" color="text.secondary">Name</Typography>
+            <Typography variant="body1">{user.name}</Typography>
+          </Box>
+          <Box>
+            <Typography variant="caption" color="text.secondary">Email</Typography>
+            <Typography variant="body1">{user.email}</Typography>
+          </Box>
+          <Box>
+            <Typography variant="caption" color="text.secondary">Access Level</Typography>
+            <Typography variant="body1">{user.access_level_name} (Level {user.access_level})</Typography>
+          </Box>
+          <Box>
+            <Typography variant="caption" color="text.secondary">Role</Typography>
+            <Typography variant="body1">{user.is_admin ? 'Admin' : 'User'}</Typography>
+          </Box>
+          <Box>
+            <Typography variant="caption" color="text.secondary">User ID</Typography>
+            <Typography variant="body2" color="text.secondary">{user.user_id}</Typography>
+          </Box>
         </Box>
       </Paper>
     </Container>

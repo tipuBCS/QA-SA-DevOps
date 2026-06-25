@@ -11,7 +11,7 @@ class TestLoginReturnsToken:
 
         response = requests.post(
             f"{api_url}/users/login",
-            json={"email": unique_email, "password": "TestPass123"},
+            json={"email": unique_email, "password": "TestPass123!"},
         )
         assert response.status_code == 200
 
@@ -26,7 +26,7 @@ class TestLoginReturnsToken:
 
         response = requests.post(
             f"{api_url}/users/login",
-            json={"email": unique_email, "password": "TestPass123"},
+            json={"email": unique_email, "password": "TestPass123!"},
         )
         data = response.json()
 

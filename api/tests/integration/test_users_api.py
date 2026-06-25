@@ -8,7 +8,7 @@ class TestSignup:
     def test_signup_returns_201(self, api_url, unique_email, cleanup):
         response = requests.post(
             f"{api_url}/users/signup",
-            json={"email": unique_email, "password": "SecurePass1", "name": "New User"},
+            json={"email": unique_email, "password": "SecurePass1!", "name": "New User"},
         )
 
         assert response.status_code == 201
@@ -28,7 +28,7 @@ class TestSignup:
 
         response = requests.post(
             f"{api_url}/users/signup",
-            json={"email": unique_email, "password": "Other123", "name": "Duplicate"},
+            json={"email": unique_email, "password": "Other123!", "name": "Duplicate"},
         )
 
         assert response.status_code == 409
@@ -50,16 +50,33 @@ class TestSignup:
         assert response.status_code == 409
         assert "Password" in response.json()["error"]
 
+    def test_signup_invalid_email_format(self, api_url):
+        response = requests.post(
+            f"{api_url}/users/signup",
+            json={"email": "notanemail", "password": "SecurePass1!", "name": "Bad Email"},
+        )
+
+        assert response.status_code == 409
+        assert "email" in response.json()["error"].lower()
+
+    def test_signup_invalid_name(self, api_url, unique_email):
+        response = requests.post(
+            f"{api_url}/users/signup",
+            json={"email": unique_email, "password": "SecurePass1!", "name": "AB"},
+        )
+
+        assert response.status_code == 409
+        assert "Name" in response.json()["error"]
+
 
 class TestLogin:
     def test_login_with_valid_credentials(self, api_url, unique_email, create_user):
-        create_user(unique_email, password="CorrectPass1")
+        create_user(unique_email, password="CorrectPass1!")
 
         response = requests.post(
             f"{api_url}/users/login",
-            json={"email": unique_email, "password": "CorrectPass1"},
+            json={"email": unique_email, "password": "CorrectPass1!"},
         )
-        print(response.json())
 
         assert response.status_code == 200
         body = response.json()
@@ -71,11 +88,11 @@ class TestLogin:
         assert len(body["token"]) > 0
 
     def test_login_with_wrong_password(self, api_url, unique_email, create_user):
-        create_user(unique_email, password="RightPass1")
+        create_user(unique_email, password="RightPass1!")
 
         response = requests.post(
             f"{api_url}/users/login",
-            json={"email": unique_email, "password": "WrongPass1"},
+            json={"email": unique_email, "password": "WrongPass1!"},
         )
 
         assert response.status_code == 401
@@ -131,11 +148,11 @@ class TestGetUser:
 
 class TestFullFlow:
     def test_signup_login_and_get_user(self, api_url, admin_headers, unique_email, cleanup):
-        """End-to-end: signup → login → get user by ID (as admin)."""
+        """End-to-end: signup -> login -> get user by ID (as admin)."""
         # Signup
         signup_resp = requests.post(
             f"{api_url}/users/signup",
-            json={"email": unique_email, "password": "FlowTest1", "name": "Flow User"},
+            json={"email": unique_email, "password": "FlowTest1!", "name": "Flow User"},
         )
         assert signup_resp.status_code == 201
         user_id = signup_resp.json()["user"]["user_id"]
@@ -144,7 +161,7 @@ class TestFullFlow:
         # Login
         login_resp = requests.post(
             f"{api_url}/users/login",
-            json={"email": unique_email, "password": "FlowTest1"},
+            json={"email": unique_email, "password": "FlowTest1!"},
         )
         assert login_resp.status_code == 200
         assert login_resp.json()["user"]["user_id"] == user_id

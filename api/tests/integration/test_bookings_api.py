@@ -112,13 +112,13 @@ class TestCancelBooking:
         other_email = f"other-{uuid.uuid4().hex[:8]}@integration-test.com"
         signup_resp = requests.post(
             f"{api_url}/users/signup",
-            json={"email": other_email, "password": "OtherUser1", "name": "Other"},
+            json={"email": other_email, "password": "OtherUser1!", "name": "Other User"},
         )
         other_user_id = signup_resp.json()["user"]["user_id"]
 
         login_resp = requests.post(
             f"{api_url}/users/login",
-            json={"email": other_email, "password": "OtherUser1"},
+            json={"email": other_email, "password": "OtherUser1!"},
         )
         other_token = login_resp.json()["token"]
 

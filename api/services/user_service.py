@@ -50,9 +50,27 @@ class UserService:
             raise ValueError("Password must contain at least one lowercase letter")
         if not any(c.isdigit() for c in password):
             raise ValueError("Password must contain at least one number")
+        if not any(c in "!@#$%^&*()_+-=[]{}|;:',.<>?/~`" for c in password):
+            raise ValueError("Password must contain at least one special character")
+
+    def _validate_email(self, email: str) -> None:
+        """Validate email format. Raises ValueError if invalid."""
+        import re
+        if not re.match(r'^.+@.+\..{2,}$', email):
+            raise ValueError("Invalid email format")
+
+    def _validate_name(self, name: str) -> None:
+        """Validate name. Raises ValueError if invalid."""
+        import re
+        if len(name.strip()) < 3:
+            raise ValueError("Name must be at least 3 characters long")
+        if not re.match(r'^[a-zA-Z\s]+$', name):
+            raise ValueError("Name must contain only letters and spaces")
 
     def create_user(self, request: CreateUserRequest) -> User:
         """Create a new user. Raises ValueError if email already exists or password is invalid."""
+        self._validate_name(request.name)
+        self._validate_email(request.email)
         self._validate_password(request.password)
 
         # Check if user already exists

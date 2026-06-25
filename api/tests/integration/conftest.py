@@ -63,7 +63,7 @@ def user_token(api_url, admin_headers, unique_email):
         f"{api_url}/users/signup",
         json={
             "email": unique_email,
-            "password": "TestPass123",
+            "password": "TestPass123!",
             "name": "Test User",
         },
     )
@@ -71,7 +71,7 @@ def user_token(api_url, admin_headers, unique_email):
 
     login_response = requests.post(
         f"{api_url}/users/login",
-        json={"email": unique_email, "password": "TestPass123"},
+        json={"email": unique_email, "password": "TestPass123!"},
     )
     token = login_response.json()["token"]
 
@@ -105,7 +105,7 @@ def cleanup(api_url, admin_headers):
 def create_user(api_url, cleanup):
     """Helper fixture to create a user and return the response."""
 
-    def _create(email: str, password: str = "TestPass123", name: str = "Test User"):
+    def _create(email: str, password: str = "TestPass123!", name: str = "Test User"):
         response = requests.post(
             f"{api_url}/users/signup",
             json={"email": email, "password": password, "name": name},
